@@ -1,0 +1,88 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+| Task | Command |
+|---|---|
+| Dev (client + server) | `npm run dev` |
+| Dev client only | `npm run dev:client` |
+| Dev server only | `npm run dev:server` |
+| Production build | `npm run build` |
+| Production start | `npm start` |
+
+No test runner or linter is configured.
+
+## Architecture
+
+**Nimbus** is a weather app with a React 19 + Vite 6 frontend and an Express 4 backend, both in one repo.
+
+### Client-Server Split
+
+- **Client** (`client/`) — React SPA using ESM. Vite entry point is `index.html` → `client/main.jsx`. During dev, Vite runs on `:5173` and proxies `/api` requests to Express on `:3000` (configured in `vite.config.js`).
+- **Server** (`server/`) — Express app using CommonJS (`require`/`module.exports`). Serves the built `dist/` folder as static files with a catch-all fallback to `index.html` for client-side routing. Single API route at `GET /api/weather?city=`.
+- **Production**: `npm run build` outputs to `dist/`, then `npm start` serves everything from Express on one port.
+
+### Design System — "Radiant"
+
+Single-column layout (max-width 780px, centered) with no sidebar. Saved cities appear in a fixed bottom dock bar.
+
+- **Glassmorphism**: All cards use `backdrop-filter: blur(40px)` with semi-transparent RGBA fills (`--glass`, `--glass-strong`). Borders are `--glass-border`.
+- **Chromatic moods**: Each weather mood (clear, night, cloudy, rainy, snowy, stormy) overrides `--accent`, `--ambient-*`, and `--temp-gradient` with a unique color palette. Sunny is amber/coral, night is indigo/purple, stormy is electric violet, etc.
+- **3-layer ambient background**: `body::before` uses three radial gradients with `--ambient-1/2/3`, animated on a 45-second cycle.
+- **Border radius**: 20px for cards, 100px (`--radius-pill`) for pills and buttons.
+- **Temperature**: `clamp(8rem, 28vw, 14rem)`, weight 200, gradient text fill.
+- **Dock**: Fixed bottom bar with pill-shaped city items, glass background with heavy blur.
+
+### Server
+
+- `server/config.js` — loads `.env` via dotenv, exports `port` and `weatherApiKey`
+- `server/routes/weather.js` — proxies requests to WeatherAPI's `forecast.json` endpoint (3-day forecast + AQI). The API key never reaches the client.
+
+### Client State & Data Flow
+
+All state lives in `App.jsx` — no external state library. Key state: `savedCities` (persisted to localStorage, max 5), `savedWeather` (cached API responses), `activeWeather` (currently displayed city), `theme` (dark/light), `tempUnit` ('c'|'f', persisted to localStorage).
+
+On mount, all saved cities are fetched in parallel and the first is auto-selected. Searched cities update the cache only if already saved. The `city` query param accepts both city names and `lat,lng` coordinates (used by geolocation).
+
+### Theming
+
+Dual-layer theming via CSS custom properties on `<html>`:
+- `data-theme="dark|light"` — base color tokens (set by user toggle, defaults to system preference)
+- `data-mood="clear|night|cloudy|rainy|snowy|stormy"` — weather-reactive chromatic palette (overrides `--accent`, `--ambient-*`, `--temp-gradient` per mood, set automatically via `utils/weatherMood.js`)
+
+Three ambient gradients (`--ambient-1/2/3`) drive the animated radial gradient on `body::before`.
+
+### Components
+
+Ten components in `client/components/`, all using default exports with PascalCase naming:
+- `SearchBar` — glass pill search input with loading spinner and GPS location button
+- `CurrentWeather` — hero section with massive temperature display (uses `useAnimatedNumber`), condition, bookmark toggle, share button. Accepts `tempUnit` for C/F switching.
+- `WeatherDetails` — horizontal scrollable pill carousel (humidity, wind, UV, pressure, visibility, precipitation)
+- `AirQuality` — EPA index badge + scrollable pollutant pills (PM2.5, PM10, O3, NO2, CO, SO2). Uses `utils/aqiUtils.js` for EPA index 1-6 level mapping.
+- `Forecast` — stacked full-width rows in a glass card. Accepts `tempUnit`.
+- `HourlyForecast` — horizontal scroll in a glass card, filters hours based on localtime offset. Accepts `tempUnit`.
+- `SunriseSunset` — sunrise/sunset timeline with animated glow dot; parses 12-hour time strings from API
+- `Sidebar` — fixed bottom dock bar with pill-shaped city items and glow on active. Accepts `tempUnit`.
+- `WeatherParticles` — pure CSS particle system per weather mood (orbs, stars, clouds, rain, snow, lightning). Respects `prefers-reduced-motion`. Uses `useMemo` for stable random generation.
+- `ShareCard` — off-screen 600x400 card (forwardRef) captured by html2canvas for sharing. Uses inline styles + mood-specific gradients.
+
+### Key Patterns
+
+- Weather condition codes (from WeatherAPI) are mapped to mood strings in `utils/weatherMood.js` using Sets for rain/snow/storm code groups
+- `hooks/useAnimatedNumber.js` — requestAnimationFrame-based animated number transitions with ease-out cubic easing, used for temperature displays
+- Staggered entry animations via inline `animationDelay` styles (60ms in WeatherDetails, 80ms in Forecast)
+- Entry animations use blur-to-clear reveals (`blurIn`, `revealUp` keyframes)
+- Weather icons from the API use protocol-relative URLs (`//cdn.weatherapi.com/...`) — components prefix with `https:`
+- All cards use heavy glassmorphism: `backdrop-filter: blur(40px)` with `var(--glass)` fills and `var(--glass-border)` borders
+- Interactive elements glow on hover via `box-shadow` with `var(--accent-glow)`
+- Fonts: Space Grotesk (`--font-display`) for headings/temperatures, Inter (`--font`) for body text (Google Fonts, loaded in `index.html`)
+- Temperature unit toggle: `tempUnit` state ('c'|'f') is prop-drilled to all temp-displaying components. Each reads the appropriate API field dynamically (e.g., `temp_c`/`temp_f`).
+- Geolocation: `navigator.geolocation.getCurrentPosition` passes `lat,lng` to `handleSearch()` — no backend changes needed since WeatherAPI accepts coordinates as the city param.
+- Share: html2canvas (dynamically imported) captures the off-screen `ShareCard`, then Web Share API is tried first with PNG file fallback to download.
+- Weather particles: CSS-only animations generated once per mood via `useMemo` with randomized positions/durations. Hidden when `prefers-reduced-motion: reduce`.
+
+### Environment
+
+Requires a `WEATHER_API_KEY` from [weatherapi.com](https://www.weatherapi.com/) in `.env` (see `.env.example`). `PORT` defaults to 3000.
