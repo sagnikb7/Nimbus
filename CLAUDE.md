@@ -63,11 +63,13 @@ Three ambient gradients (`--ambient-1/2/3`) drive the animated radial gradient o
 
 ### Components
 
-Ten components in `client/components/`, all using default exports with PascalCase naming:
+Twelve components in `client/components/`, all using default exports with PascalCase naming:
 - `SearchBar` — glass pill search input with loading spinner and GPS location button
 - `CurrentWeather` — hero section with massive temperature display (uses `useAnimatedNumber`), condition, bookmark toggle, share button. Accepts `tempUnit` for C/F switching.
 - `WeatherDetails` — horizontal scrollable pill carousel ordered by importance: AQI, Wind, Humidity, UV, Precip, Visibility, Pressure. AQI and Wind pills are interactive (accent border + chevron indicator) and open detail overlays.
-- `AQIDetail` — full-screen detail overlay (same pattern as `WindDetail`): animated hero AQI number, primary pollutant card, pollutant breakdown grid, AQI scale ladder, outdoor guidance, educational accordion. Uses `calculateAQI()` for numeric US AQI (0–500) with `getAQILevelFromEpa` fallback. Locks body scroll, closes on Escape/overlay click.
+- `AQIDetail` — full-screen detail overlay: animated hero AQI number, primary pollutant card, pollutant breakdown grid, AQI scale ladder, outdoor guidance, educational accordion. Uses `calculateAQI()` for numeric US AQI (0–500) with `getAQILevelFromEpa` fallback. Locks body scroll, closes on Escape/overlay click.
+- `AirQuality` — compact AQI card using EPA index from API; shows pollutant breakdown grid (PM2.5, PM10, O₃, NO₂, CO, SO₂).
+- `WindDetail` — full-screen detail overlay (same pattern as `AQIDetail`): animated hero wind speed, compass arrow SVG, Beaufort scale category, hourly wind chart, gust assessment, prevailing direction, peak hour. Uses `windUtils.js` helpers.
 - `Forecast` — stacked full-width rows in a glass card. Accepts `tempUnit`.
 - `HourlyForecast` — horizontal scroll in a glass card, filters hours based on localtime offset. Accepts `tempUnit`.
 - `SunriseSunset` — sunrise/sunset timeline with animated glow dot; parses 12-hour time strings from API
@@ -81,6 +83,7 @@ Ten components in `client/components/`, all using default exports with PascalCas
 - `hooks/useAnimatedNumber.js` — requestAnimationFrame-based animated number transitions with ease-in-out quartic easing, used for temperature displays and AQI hero number. Initializes from 0 so temperatures count up on city load/switch (component remounts via `key={activeCity}`). C/F toggle animates from old → new value.
 - `utils/aqiUtils.js` — full EPA AQI breakpoint calculation: converts WeatherAPI μg/m³ values to EPA-native units (ppm/ppb), applies linear interpolation per pollutant, returns max sub-index as the overall AQI. Also exports `AQI_LEVELS`, `POLLUTANT_INFO`, and helpers (`getPrimaryPollutant`, `getSortedPollutants`, `getAQISummary`).
 - `utils/weatherCache.js` — localStorage cache keyed by city name, 15-min TTL. Exports `getCached`, `setCache`, `removeCache`, `partitionCities`. Handles quota exceeded by pruning stale entries.
+- `utils/windUtils.js` — Beaufort-scale wind categories (kph thresholds) and helpers: `getWindCategory`, `getHourlyWind`, `getPrevailingDirection`, `getGustAssessment`, `getPeakWindHour`, `getWindSummary`. Used by `WindDetail` component.
 - Interactive detail pills (Wind, AQI) use accent-colored border and a `::after` chevron pseudo-element as visual affordance for the drill-down.
 - Staggered entry animations via inline `animationDelay` styles (60ms in WeatherDetails, 80ms in Forecast)
 - Entry animations use blur-to-clear reveals (`blurIn`, `revealUp`, `tempReveal` keyframes). `tempReveal` adds blur + scale + fade on `.current-temp` on mount.
