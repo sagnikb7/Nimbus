@@ -18,6 +18,7 @@ A modern weather app with real-time forecasts, air quality, animated backgrounds
 - **Sunrise / sunset** -- animated timeline with progress dot and glow
 - **Dark / Light mode** -- respects system preference, toggleable, remembers your choice
 - **Chromatic moods** -- the entire color palette shifts based on weather conditions (amber for clear, indigo for night, violet for storms, etc.)
+- **Installable PWA** -- install to home screen on mobile or desktop for a full-screen native experience with offline support
 - **Responsive** -- single-column layout with bottom dock, optimized for mobile and desktop
 - **Glassmorphism UI** -- frosted glass cards, 3-layer ambient gradient background, fluid typography
 
@@ -28,9 +29,11 @@ A modern weather app with real-time forecasts, air quality, animated backgrounds
 | Frontend | React 19, Vite 6 |
 | Backend | Express 4, Node.js |
 | Weather data | [WeatherAPI](https://www.weatherapi.com/) |
+| PWA | vite-plugin-pwa, Workbox |
 | Styling | CSS custom properties, glassmorphism, CSS particle animations |
 | Typography | Space Grotesk + Inter (Google Fonts) |
 | Share | html2canvas, Web Share API |
+| Package manager | pnpm |
 | Dev tools | Concurrently, Nodemon |
 
 ## Getting Started
@@ -38,6 +41,7 @@ A modern weather app with real-time forecasts, air quality, animated backgrounds
 ### Prerequisites
 
 - **Node.js** 18+
+- **pnpm** -- install via `npm install -g pnpm`
 - A free **WeatherAPI** key -- sign up at [weatherapi.com](https://www.weatherapi.com/)
 
 ### Installation
@@ -45,7 +49,7 @@ A modern weather app with real-time forecasts, air quality, animated backgrounds
 ```bash
 git clone <repo-url>
 cd node-weather
-npm install
+pnpm install
 ```
 
 ### Configure
@@ -66,7 +70,7 @@ PORT=3000
 **Development** (hot-reload on both client and server):
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This starts the Vite dev server on `:5173` (with API proxy to `:3000`) and the Express API on `:3000` concurrently.
@@ -74,8 +78,8 @@ This starts the Vite dev server on `:5173` (with API proxy to `:3000`) and the E
 **Production**:
 
 ```bash
-npm run build
-npm start
+pnpm build
+pnpm start
 ```
 
 Builds the React app to `dist/`, then Express serves it on `http://localhost:3000`.
@@ -110,8 +114,15 @@ nimbus/
 │   ├── config.js                   Env var loader
 │   └── routes/
 │       └── weather.js              GET /api/weather?city=
-├── index.html                      Vite HTML entry
-├── vite.config.js                  Vite + React plugin + dev proxy
+├── public/                         Static assets
+│   ├── favicon.svg                 SVG favicon (minimal cloud)
+│   ├── pwa-192x192.png             PWA icon 192px
+│   ├── pwa-512x512.png             PWA icon 512px
+│   └── apple-touch-icon-180x180.png  iOS home screen icon
+├── scripts/
+│   └── generate-icons.js           PNG icon generator (no deps)
+├── index.html                      Vite HTML entry + PWA meta tags
+├── vite.config.js                  Vite + React + PWA plugin config
 ├── .env.example                    Environment template
 └── package.json
 ```
@@ -120,11 +131,12 @@ nimbus/
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start Vite + Express concurrently |
-| `npm run dev:client` | Vite dev server only (`:5173`) |
-| `npm run dev:server` | Express with nodemon only (`:3000`) |
-| `npm run build` | Build React app to `dist/` |
-| `npm start` | Production server |
+| `pnpm dev` | Start Vite + Express concurrently |
+| `pnpm dev:client` | Vite dev server only (`:5173`) |
+| `pnpm dev:server` | Express with nodemon only (`:3000`) |
+| `pnpm build` | Build React app to `dist/` |
+| `pnpm start` | Production server |
+| `node scripts/generate-icons.js` | Regenerate PWA icon PNGs from source |
 
 ## API
 
