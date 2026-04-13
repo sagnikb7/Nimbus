@@ -8,6 +8,7 @@ import Forecast from './components/Forecast';
 import HourlyForecast from './components/HourlyForecast';
 import WeatherParticles from './components/WeatherParticles';
 import ShareCard from './components/ShareCard';
+import WindDetail from './components/WindDetail';
 import { getWeatherMood } from './utils/weatherMood';
 import { captureShareCard, shareOrDownload } from './utils/shareUtils';
 import './App.css';
@@ -27,6 +28,7 @@ export default function App() {
   const [geoLoading, setGeoLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [windDetailOpen, setWindDetailOpen] = useState(false);
   const shareCardRef = useRef(null);
 
   const [tempUnit, setTempUnit] = useState(() => {
@@ -219,6 +221,11 @@ export default function App() {
   const canSave = savedCities.length < 5;
   const astro = activeWeather?.forecast?.forecastday?.[0]?.astro;
 
+  // Close wind overlay when city changes
+  useEffect(() => {
+    setWindDetailOpen(false);
+  }, [activeCity]);
+
   return (
     <div className="shell">
       <WeatherParticles mood={mood} />
@@ -300,7 +307,7 @@ export default function App() {
               astro={astro}
               tempUnit={tempUnit}
             />
-            <WeatherDetails current={activeWeather.current} />
+            <WeatherDetails current={activeWeather.current} onWindClick={() => setWindDetailOpen(true)} />
             <AirQuality airQuality={activeWeather.current.air_quality} />
             {activeWeather.forecast && (
               <HourlyForecast
@@ -345,6 +352,15 @@ export default function App() {
 
       {activeWeather && (
         <ShareCard ref={shareCardRef} data={activeWeather} tempUnit={tempUnit} mood={mood} />
+      )}
+
+      {windDetailOpen && activeWeather && (
+        <WindDetail
+          current={activeWeather.current}
+          forecastDays={activeWeather.forecast?.forecastday || []}
+          localtime={activeWeather.location.localtime}
+          onClose={() => setWindDetailOpen(false)}
+        />
       )}
     </div>
   );

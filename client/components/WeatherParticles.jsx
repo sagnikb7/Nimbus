@@ -8,87 +8,116 @@ function generateParticles(mood) {
   if (!mood) return null;
 
   switch (mood) {
+    // Warm amber circles rising — thermals / heat shimmer
     case 'clear':
-      return Array.from({ length: 12 }, (_, i) => ({
-        type: 'orb',
-        key: i,
-        style: {
-          left: `${rand(5, 95)}%`,
-          width: `${rand(3, 8)}px`,
-          height: `${rand(3, 8)}px`,
-          animationDuration: `${rand(15, 25)}s`,
-          animationDelay: `${rand(0, 15)}s`,
-          opacity: rand(0.08, 0.25),
-        },
-      }));
+      return Array.from({ length: 14 }, (_, i) => {
+        const size = `${rand(4, 10)}px`;
+        return {
+          type: 'orb',
+          key: i,
+          style: {
+            left: `${rand(5, 95)}%`,
+            width: size,
+            height: size,
+            animationDuration: `${rand(16, 26)}s`,
+            animationDelay: `${rand(0, 16)}s`,
+            opacity: rand(0.10, 0.30),
+          },
+        };
+      });
 
+    // Purple circles pulsing in place — twinkling stars
     case 'night':
-      return Array.from({ length: 35 }, (_, i) => ({
-        type: 'star',
-        key: i,
-        style: {
-          left: `${rand(2, 98)}%`,
-          top: `${rand(2, 70)}%`,
-          width: `${rand(1, 3)}px`,
-          height: `${rand(1, 3)}px`,
-          animationDuration: `${rand(3, 6)}s`,
-          animationDelay: `${rand(0, 5)}s`,
-        },
-      }));
+      return Array.from({ length: 30 }, (_, i) => {
+        const size = `${rand(2, 5)}px`;
+        return {
+          type: 'star',
+          key: i,
+          style: {
+            left: `${rand(2, 98)}%`,
+            top: `${rand(2, 70)}%`,
+            width: size,
+            height: size,
+            animationDuration: `${rand(3, 6)}s`,
+            animationDelay: `${rand(0, 5)}s`,
+            opacity: rand(0.10, 0.30),
+          },
+        };
+      });
 
+    // Slate circles drifting left→right — clouds in wind
     case 'cloudy':
-      return Array.from({ length: 4 }, (_, i) => ({
-        type: 'cloud',
-        key: i,
-        style: {
-          top: `${rand(5, 50)}%`,
-          animationDuration: `${rand(50, 70)}s`,
-          animationDelay: `${rand(0, 30)}s`,
-          opacity: rand(0.02, 0.05),
-          transform: `scale(${rand(0.8, 1.4)})`,
-        },
-      }));
+      return Array.from({ length: 22 }, (_, i) => {
+        const size = `${rand(15, 70)}px`;
+        return {
+          type: 'cloud-circle',
+          key: i,
+          style: {
+            left: `${rand(0, 100)}%`,
+            top: `${rand(0, 100)}%`,
+            width: size,
+            height: size,
+            animationDuration: `${rand(20, 40)}s`,
+            animationDelay: `${rand(0, 20)}s`,
+            opacity: rand(0.06, 0.20),
+          },
+        };
+      });
 
+    // Blue circles falling fast — raindrops catching light
     case 'rainy':
-      return Array.from({ length: 40 }, (_, i) => ({
-        type: 'raindrop',
-        key: i,
-        style: {
-          left: `${rand(0, 100)}%`,
-          height: `${rand(20, 40)}px`,
-          animationDuration: `${rand(0.5, 1.2)}s`,
-          animationDelay: `${rand(0, 2)}s`,
-          opacity: rand(0.1, 0.3),
-        },
-      }));
+      return Array.from({ length: 35 }, (_, i) => {
+        const size = `${rand(3, 7)}px`;
+        return {
+          type: 'raindrop',
+          key: i,
+          style: {
+            left: `${rand(0, 100)}%`,
+            width: size,
+            height: size,
+            animationDuration: `${rand(1.0, 2.0)}s`,
+            animationDelay: `${rand(0, 3)}s`,
+            opacity: rand(0.12, 0.35),
+          },
+        };
+      });
 
+    // Ice-blue circles drifting down slowly — snowflakes
     case 'snowy':
-      return Array.from({ length: 25 }, (_, i) => ({
-        type: 'snowflake',
-        key: i,
-        style: {
-          left: `${rand(0, 100)}%`,
-          width: `${rand(2, 5)}px`,
-          height: `${rand(2, 5)}px`,
-          animationDuration: `${rand(6, 12)}s`,
-          animationDelay: `${rand(0, 8)}s`,
-          opacity: rand(0.15, 0.4),
-        },
-      }));
+      return Array.from({ length: 25 }, (_, i) => {
+        const size = `${rand(3, 8)}px`;
+        return {
+          type: 'snowflake',
+          key: i,
+          style: {
+            left: `${rand(0, 100)}%`,
+            width: size,
+            height: size,
+            animationDuration: `${rand(6, 14)}s`,
+            animationDelay: `${rand(0, 8)}s`,
+            opacity: rand(0.15, 0.40),
+          },
+        };
+      });
 
+    // Violet circles falling hard + lightning flash
     case 'stormy': {
-      const rain = Array.from({ length: 45 }, (_, i) => ({
-        type: 'raindrop',
-        key: `r${i}`,
-        style: {
-          left: `${rand(0, 100)}%`,
-          height: `${rand(15, 35)}px`,
-          animationDuration: `${rand(0.4, 0.9)}s`,
-          animationDelay: `${rand(0, 1.5)}s`,
-          opacity: rand(0.12, 0.3),
-        },
-      }));
-      rain.push({
+      const drops = Array.from({ length: 45 }, (_, i) => {
+        const size = `${rand(3, 6)}px`;
+        return {
+          type: 'storm-drop',
+          key: `d${i}`,
+          style: {
+            left: `${rand(0, 100)}%`,
+            width: size,
+            height: size,
+            animationDuration: `${rand(0.6, 1.4)}s`,
+            animationDelay: `${rand(0, 2)}s`,
+            opacity: rand(0.12, 0.30),
+          },
+        };
+      });
+      drops.push({
         type: 'lightning',
         key: 'lightning',
         style: {
@@ -96,7 +125,7 @@ function generateParticles(mood) {
           animationDelay: `${rand(2, 5)}s`,
         },
       });
-      return rain;
+      return drops;
     }
 
     default:
@@ -115,19 +144,9 @@ export default function WeatherParticles({ mood }) {
 
   return (
     <div className="weather-particles" aria-hidden="true">
-      {particles.map((p) => {
-        if (p.type === 'cloud') {
-          return (
-            <svg key={p.key} className="cloud-shape" style={p.style} viewBox="0 0 200 100" fill="currentColor">
-              <ellipse cx="70" cy="60" rx="50" ry="30" />
-              <ellipse cx="110" cy="50" rx="40" ry="25" />
-              <ellipse cx="140" cy="60" rx="35" ry="22" />
-              <ellipse cx="100" cy="70" rx="60" ry="25" />
-            </svg>
-          );
-        }
-        return <div key={p.key} className={`particle ${p.type}`} style={p.style} />;
-      })}
+      {particles.map((p) => (
+        <div key={p.key} className={`particle ${p.type}`} style={p.style} />
+      ))}
     </div>
   );
 }

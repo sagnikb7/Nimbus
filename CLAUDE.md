@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Required references
+
+- **Before editing `client/components/WeatherParticles.jsx` or particle CSS in `client/App.css`**: Read `WEATHER_PARTICLES_GUIDE.md` first. It contains hard rules (circles only, no ellipses, no SVGs, etc.) and the current debug/production state.
+
 ## Commands
 
 | Task | Command |
