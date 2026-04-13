@@ -9,7 +9,9 @@ A modern weather app with real-time forecasts, air quality, animated backgrounds
 - **Real-time weather** -- current temperature, feels-like, humidity, wind, UV, pressure, visibility, and precipitation
 - **3-day forecast** -- daily highs and lows with condition icons
 - **Hourly forecast** -- scrollable hour-by-hour breakdown with "now" highlight
-- **Air quality** -- EPA index badge (Good through Hazardous) with PM2.5, PM10, O3, NO2, CO, SO2 pollutant pills
+- **Air quality** -- numeric US AQI (0–500) calculated from EPA breakpoint tables, shown as a tappable pill with a full detail drill-down (primary pollutant, pollutant breakdown grid, AQI scale ladder, outdoor guidance, educational section)
+- **Smart caching** -- localStorage-backed weather cache with 15-minute TTL and stale-while-revalidate pattern to minimize API calls
+- **Freshness indicator** -- "Updated X mins ago" label so you always know how current the data is
 - **Temperature units** -- toggle between Celsius and Fahrenheit, persisted across sessions
 - **Geolocation** -- one-tap GPS button to get weather for your current location
 - **Saved locations** -- bookmark up to 5 cities in a bottom dock bar, persisted in localStorage
@@ -62,7 +64,7 @@ cp .env.example .env
 
 ```env
 WEATHER_API_KEY=your_api_key_here
-PORT=3000
+PORT=3033
 ```
 
 ### Run
@@ -73,7 +75,7 @@ PORT=3000
 pnpm dev
 ```
 
-This starts the Vite dev server on `:5173` (with API proxy to `:3000`) and the Express API on `:3000` concurrently.
+This starts the Vite dev server on `:5173` (with API proxy to `:3033`) and the Express API on `:3033` concurrently.
 
 **Production**:
 
@@ -82,7 +84,7 @@ pnpm build
 pnpm start
 ```
 
-Builds the React app to `dist/`, then Express serves it on `http://localhost:3000`.
+Builds the React app to `dist/`, then Express serves it on `http://localhost:3033`.
 
 ## Project Structure
 
@@ -95,8 +97,8 @@ nimbus/
 │   ├── components/
 │   │   ├── SearchBar.jsx           Search input + GPS location button
 │   │   ├── CurrentWeather.jsx      Hero temp, condition, save, share
-│   │   ├── WeatherDetails.jsx      Scrollable stat pills
-│   │   ├── AirQuality.jsx          EPA badge + pollutant pills
+│   │   ├── WeatherDetails.jsx      Scrollable stat pills (AQI, Wind, Humidity, UV, ...)
+│   │   ├── AQIDetail.jsx           Full-screen AQI detail drill-down
 │   │   ├── HourlyForecast.jsx      Hour-by-hour scroll
 │   │   ├── Forecast.jsx            3-day forecast rows
 │   │   ├── SunriseSunset.jsx       Sunrise/sunset timeline
@@ -107,7 +109,8 @@ nimbus/
 │   │   └── useAnimatedNumber.js    rAF-based number transitions
 │   └── utils/
 │       ├── weatherMood.js          Condition code → mood mapping
-│       ├── aqiUtils.js             EPA index → level/color mapping
+│       ├── aqiUtils.js             EPA AQI breakpoint calculation + pollutant helpers
+│       ├── weatherCache.js         localStorage cache with 15-min TTL + SWR
 │       └── shareUtils.js           html2canvas capture + Web Share
 ├── server/                         Express backend
 │   ├── index.js                    Server entry, static + API
@@ -133,7 +136,7 @@ nimbus/
 |---|---|
 | `pnpm dev` | Start Vite + Express concurrently |
 | `pnpm dev:client` | Vite dev server only (`:5173`) |
-| `pnpm dev:server` | Express with nodemon only (`:3000`) |
+| `pnpm dev:server` | Express with nodemon only (`:3033`) |
 | `pnpm build` | Build React app to `dist/` |
 | `pnpm start` | Production server |
 | `node scripts/generate-icons.js` | Regenerate PWA icon PNGs from source |
@@ -171,7 +174,7 @@ Returns current weather + 3-day forecast + air quality from WeatherAPI.
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `WEATHER_API_KEY` | Yes | -- | Your WeatherAPI key |
-| `PORT` | No | `3000` | Server port |
+| `PORT` | No | `3033` | Server port |
 
 ## License
 

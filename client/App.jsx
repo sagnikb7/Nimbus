@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar';
 import SearchBar from './components/SearchBar';
 import CurrentWeather from './components/CurrentWeather';
 import WeatherDetails from './components/WeatherDetails';
-import AirQuality from './components/AirQuality';
+import AQIDetail from './components/AQIDetail';
 import Forecast from './components/Forecast';
 import HourlyForecast from './components/HourlyForecast';
 import WeatherParticles from './components/WeatherParticles';
@@ -11,7 +11,36 @@ import ShareCard from './components/ShareCard';
 import WindDetail from './components/WindDetail';
 import { getWeatherMood } from './utils/weatherMood';
 import { captureShareCard, shareOrDownload } from './utils/shareUtils';
+import { getCached, setCache, removeCache, partitionCities } from './utils/weatherCache';
 import './App.css';
+
+function FreshnessLabel({ city }) {
+  const [, tick] = useState(0);
+
+  // Re-render every 60s to keep the relative time current
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!city) return null;
+  const hit = getCached(city);
+  if (!hit) return null;
+
+  const secs = Math.floor((Date.now() - hit.ts) / 1000);
+  let text;
+  if (secs < 60) text = 'just now';
+  else {
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) text = `${mins} min${mins > 1 ? 's' : ''} ago`;
+    else {
+      const hours = Math.floor(mins / 60);
+      text = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    }
+  }
+
+  return <span className="freshness-label">Updated {text}</span>;
+}
 
 export default function App() {
   const [savedCities, setSavedCities] = useState(() => {
@@ -29,6 +58,7 @@ export default function App() {
   const [refreshing, setRefreshing] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [windDetailOpen, setWindDetailOpen] = useState(false);
+  const [aqiDetailOpen, setAQIDetailOpen] = useState(false);
   const shareCardRef = useRef(null);
 
   const [tempUnit, setTempUnit] = useState(() => {
@@ -63,42 +93,104 @@ export default function App() {
     localStorage.setItem('savedCities', JSON.stringify(savedCities));
   }, [savedCities]);
 
-  // Fetch weather for all saved cities on mount
+  // Load weather for saved cities — serve cached data instantly, fetch stale/missing in background
   useEffect(() => {
     if (savedCities.length === 0) return;
 
+    const { cached, toFetch } = partitionCities(savedCities);
+
+    // Show all cached data immediately (fresh stays as-is, stale gets SWR below)
+    if (Object.keys(cached).length > 0) {
+      setSavedWeather(cached);
+      const first = savedCities[0];
+      if (cached[first]) setActiveWeather(cached[first]);
+    }
+
+    // Everything is fresh — no API calls needed
+    if (toFetch.length === 0) return;
+
+    // Background-fetch stale + missing cities
     Promise.all(
-      savedCities.map((city) =>
+      toFetch.map((city) =>
         fetch(`/api/weather?city=${encodeURIComponent(city)}`)
           .then((r) => (r.ok ? r.json() : null))
           .catch(() => null)
       )
     ).then((results) => {
-      const map = {};
-      savedCities.forEach((city, i) => {
-        if (results[i]) map[city] = results[i];
+      const newData = {};
+      toFetch.forEach((city, i) => {
+        if (results[i]) {
+          newData[city] = results[i];
+          setCache(city, results[i]);
+        }
       });
-      setSavedWeather(map);
 
-      // Auto-select first saved city
-      const first = savedCities[0];
-      if (map[first]) setActiveWeather(map[first]);
+      if (Object.keys(newData).length === 0) return;
+
+      setSavedWeather((prev) => ({ ...prev, ...newData }));
+
+      // SWR: silently refresh active weather if it was stale
+      setActiveWeather((prev) => {
+        if (!prev) {
+          const first = savedCities[0];
+          return newData[first] || null;
+        }
+        const name = prev.location?.name;
+        return newData[name] || prev;
+      });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSearch(city) {
-    setLoading(true);
     setError('');
 
+    // --- Cache-hit path: fresh data → no API call ---
+    const hit = getCached(city);
+    if (hit?.fresh) {
+      setActiveWeather(hit.data);
+      const name = hit.data.location.name;
+      if (savedCities.includes(name)) {
+        setSavedWeather((prev) => ({ ...prev, [name]: hit.data }));
+      }
+      return;
+    }
+
+    // --- SWR path: stale data → show immediately, refresh in background ---
+    if (hit) {
+      setActiveWeather(hit.data);
+      const cachedName = hit.data.location.name;
+      if (savedCities.includes(cachedName)) {
+        setSavedWeather((prev) => ({ ...prev, [cachedName]: hit.data }));
+      }
+      // Silent background refresh (no loading spinner)
+      fetch(`/api/weather?city=${encodeURIComponent(city)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (!data) return;
+          const name = data.location.name;
+          setCache(name, data);
+          // Only update display if user is still viewing this city
+          setActiveWeather((prev) =>
+            prev?.location?.name === name ? data : prev
+          );
+          if (savedCities.includes(name)) {
+            setSavedWeather((prev) => ({ ...prev, [name]: data }));
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
+    // --- Miss path: no cache → fetch with loading spinner ---
+    setLoading(true);
     try {
       const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'City not found');
 
       setActiveWeather(data);
-
-      // Update cache if this city is saved
       const name = data.location.name;
+      setCache(name, data);
       if (savedCities.includes(name)) {
         setSavedWeather((prev) => ({ ...prev, [name]: data }));
       }
@@ -117,6 +209,7 @@ export default function App() {
 
     setSavedCities((prev) => [...prev, name]);
     setSavedWeather((prev) => ({ ...prev, [name]: activeWeather }));
+    setCache(name, activeWeather);
   }
 
   function handleRemove(city) {
@@ -126,6 +219,7 @@ export default function App() {
       delete next[city];
       return next;
     });
+    removeCache(city);
     if (activeWeather?.location?.name === city) {
       setActiveWeather(null);
     }
@@ -174,6 +268,7 @@ export default function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setActiveWeather(data);
+      setCache(city, data);
       if (savedCities.includes(city)) {
         setSavedWeather((prev) => ({ ...prev, [city]: data }));
       }
@@ -221,9 +316,10 @@ export default function App() {
   const canSave = savedCities.length < 5;
   const astro = activeWeather?.forecast?.forecastday?.[0]?.astro;
 
-  // Close wind overlay when city changes
+  // Close detail overlays when city changes
   useEffect(() => {
     setWindDetailOpen(false);
+    setAQIDetailOpen(false);
   }, [activeCity]);
 
   return (
@@ -307,8 +403,12 @@ export default function App() {
               astro={astro}
               tempUnit={tempUnit}
             />
-            <WeatherDetails current={activeWeather.current} onWindClick={() => setWindDetailOpen(true)} />
-            <AirQuality airQuality={activeWeather.current.air_quality} />
+            <FreshnessLabel city={activeCity} />
+            <WeatherDetails
+              current={activeWeather.current}
+              onWindClick={() => setWindDetailOpen(true)}
+              onAQIClick={() => setAQIDetailOpen(true)}
+            />
             {activeWeather.forecast && (
               <HourlyForecast
                 forecastDays={activeWeather.forecast.forecastday}
@@ -360,6 +460,13 @@ export default function App() {
           forecastDays={activeWeather.forecast?.forecastday || []}
           localtime={activeWeather.location.localtime}
           onClose={() => setWindDetailOpen(false)}
+        />
+      )}
+
+      {aqiDetailOpen && activeWeather?.current?.air_quality && (
+        <AQIDetail
+          airQuality={activeWeather.current.air_quality}
+          onClose={() => setAQIDetailOpen(false)}
         />
       )}
     </div>

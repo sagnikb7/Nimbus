@@ -25,7 +25,7 @@ Package manager is **pnpm** (not npm). No test runner or linter is configured.
 
 ### Client-Server Split
 
-- **Client** (`client/`) — React SPA using ESM. Vite entry point is `index.html` → `client/main.jsx`. During dev, Vite runs on `:5173` and proxies `/api` requests to Express on `:3000` (configured in `vite.config.js`).
+- **Client** (`client/`) — React SPA using ESM. Vite entry point is `index.html` → `client/main.jsx`. During dev, Vite runs on `:5173` and proxies `/api` requests to Express on `:3033` (configured in `vite.config.js`).
 - **Server** (`server/`) — Express app using CommonJS (`require`/`module.exports`). Serves the built `dist/` folder as static files with a catch-all fallback to `index.html` for client-side routing. Single API route at `GET /api/weather?city=`.
 - **Production**: `pnpm build` outputs to `dist/`, then `pnpm start` serves everything from Express on one port.
 
@@ -47,9 +47,11 @@ Single-column layout (max-width 780px, centered) with no sidebar. Saved cities a
 
 ### Client State & Data Flow
 
-All state lives in `App.jsx` — no external state library. Key state: `savedCities` (persisted to localStorage, max 5), `savedWeather` (cached API responses), `activeWeather` (currently displayed city), `theme` (dark/light), `tempUnit` ('c'|'f', persisted to localStorage).
+All state lives in `App.jsx` — no external state library. Key state: `savedCities` (persisted to localStorage, max 5), `savedWeather` (cached API responses), `activeWeather` (currently displayed city), `theme` (dark/light), `tempUnit` ('c'|'f', persisted to localStorage), `aqiDetailOpen` (AQI detail overlay).
 
-On mount, all saved cities are fetched in parallel and the first is auto-selected. Searched cities update the cache only if already saved. The `city` query param accepts both city names and `lat,lng` coordinates (used by geolocation).
+**Caching**: `utils/weatherCache.js` provides localStorage-backed caching with a 15-minute TTL. On mount, `partitionCities()` splits saved cities into fresh (served from cache) and stale/missing (fetched from API). `handleSearch` uses three paths: fresh cache hit (no API call), stale SWR (show cached + background refresh), and miss (loading spinner + fetch). `handleRefresh` always bypasses cache. A `FreshnessLabel` component (defined in `App.jsx`) shows "Updated X mins ago" using the cache timestamp.
+
+The `city` query param accepts both city names and `lat,lng` coordinates (used by geolocation).
 
 ### Theming
 
@@ -64,8 +66,8 @@ Three ambient gradients (`--ambient-1/2/3`) drive the animated radial gradient o
 Ten components in `client/components/`, all using default exports with PascalCase naming:
 - `SearchBar` — glass pill search input with loading spinner and GPS location button
 - `CurrentWeather` — hero section with massive temperature display (uses `useAnimatedNumber`), condition, bookmark toggle, share button. Accepts `tempUnit` for C/F switching.
-- `WeatherDetails` — horizontal scrollable pill carousel (humidity, wind, UV, pressure, visibility, precipitation)
-- `AirQuality` — EPA index badge + scrollable pollutant pills (PM2.5, PM10, O3, NO2, CO, SO2). Uses `utils/aqiUtils.js` for EPA index 1-6 level mapping.
+- `WeatherDetails` — horizontal scrollable pill carousel ordered by importance: AQI, Wind, Humidity, UV, Precip, Visibility, Pressure. AQI and Wind pills are interactive (accent border + chevron indicator) and open detail overlays.
+- `AQIDetail` — full-screen detail overlay (same pattern as `WindDetail`): animated hero AQI number, primary pollutant card, pollutant breakdown grid, AQI scale ladder, outdoor guidance, educational accordion. Uses `calculateAQI()` for numeric US AQI (0–500) with `getAQILevelFromEpa` fallback. Locks body scroll, closes on Escape/overlay click.
 - `Forecast` — stacked full-width rows in a glass card. Accepts `tempUnit`.
 - `HourlyForecast` — horizontal scroll in a glass card, filters hours based on localtime offset. Accepts `tempUnit`.
 - `SunriseSunset` — sunrise/sunset timeline with animated glow dot; parses 12-hour time strings from API
@@ -76,7 +78,10 @@ Ten components in `client/components/`, all using default exports with PascalCas
 ### Key Patterns
 
 - Weather condition codes (from WeatherAPI) are mapped to mood strings in `utils/weatherMood.js` using Sets for rain/snow/storm code groups
-- `hooks/useAnimatedNumber.js` — requestAnimationFrame-based animated number transitions with ease-in-out quartic easing, used for temperature displays. Initializes from 0 so temperatures count up on city load/switch (component remounts via `key={activeCity}`). C/F toggle animates from old → new value.
+- `hooks/useAnimatedNumber.js` — requestAnimationFrame-based animated number transitions with ease-in-out quartic easing, used for temperature displays and AQI hero number. Initializes from 0 so temperatures count up on city load/switch (component remounts via `key={activeCity}`). C/F toggle animates from old → new value.
+- `utils/aqiUtils.js` — full EPA AQI breakpoint calculation: converts WeatherAPI μg/m³ values to EPA-native units (ppm/ppb), applies linear interpolation per pollutant, returns max sub-index as the overall AQI. Also exports `AQI_LEVELS`, `POLLUTANT_INFO`, and helpers (`getPrimaryPollutant`, `getSortedPollutants`, `getAQISummary`).
+- `utils/weatherCache.js` — localStorage cache keyed by city name, 15-min TTL. Exports `getCached`, `setCache`, `removeCache`, `partitionCities`. Handles quota exceeded by pruning stale entries.
+- Interactive detail pills (Wind, AQI) use accent-colored border and a `::after` chevron pseudo-element as visual affordance for the drill-down.
 - Staggered entry animations via inline `animationDelay` styles (60ms in WeatherDetails, 80ms in Forecast)
 - Entry animations use blur-to-clear reveals (`blurIn`, `revealUp`, `tempReveal` keyframes). `tempReveal` adds blur + scale + fade on `.current-temp` on mount.
 - Weather icons from the API use protocol-relative URLs (`//cdn.weatherapi.com/...`) — components prefix with `https:`
@@ -103,4 +108,4 @@ Configured via `vite-plugin-pwa` in `vite.config.js`:
 
 ### Environment
 
-Requires a `WEATHER_API_KEY` from [weatherapi.com](https://www.weatherapi.com/) in `.env` (see `.env.example`). `PORT` defaults to 3000.
+Requires a `WEATHER_API_KEY` from [weatherapi.com](https://www.weatherapi.com/) in `.env` (see `.env.example`). `PORT` defaults to 3033.

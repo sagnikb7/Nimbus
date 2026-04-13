@@ -1,12 +1,31 @@
-export default function WeatherDetails({ current, onWindClick }) {
+import { calculateAQI, getAQILevel, getAQILevelFromEpa } from '../utils/aqiUtils';
+
+export default function WeatherDetails({ current, onWindClick, onAQIClick }) {
+  const aq = current.air_quality;
+  const result = aq ? calculateAQI(aq) : null;
+  const epa = aq?.['us-epa-index'];
+
+  // Prefer calculated numeric AQI; fall back to EPA category index
+  const numericAqi = result?.aqi;
+  const aqiLevel = numericAqi != null
+    ? getAQILevel(numericAqi)
+    : epa != null ? getAQILevelFromEpa(epa) : null;
+  const pillValue = numericAqi != null ? numericAqi : aqiLevel?.label;
+
   const details = [
-    { label: 'Humidity', value: `${current.humidity}%` },
+    // Interactive metrics first — highest user value
+    ...(aqiLevel ? [{ label: 'AQI', value: pillValue, onClick: onAQIClick }] : []),
     { label: 'Wind', value: `${current.wind_kph} km/h`, onClick: onWindClick },
+    // Core conditions
+    { label: 'Humidity', value: `${current.humidity}%` },
     { label: 'UV Index', value: current.uv },
-    { label: 'Pressure', value: `${current.pressure_mb} hPa` },
-    { label: 'Visibility', value: `${current.vis_km} km` },
     { label: 'Precip', value: `${current.precip_mm} mm` },
+    { label: 'Visibility', value: `${current.vis_km} km` },
+    { label: 'Pressure', value: `${current.pressure_mb} hPa` },
   ];
+
+  // Alert bar threshold: numeric AQI > 100 or EPA category >= 3
+  const showAlert = aqiLevel && ((numericAqi != null && numericAqi > 100) || (numericAqi == null && epa >= 3));
 
   return (
     <div className="details-carousel">
@@ -26,6 +45,24 @@ export default function WeatherDetails({ current, onWindClick }) {
           </div>
         ))}
       </div>
+
+      {/* Compact alert bar — only for concerning AQI */}
+      {showAlert && (
+        <div
+          className="aqi-alert"
+          onClick={onAQIClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter') onAQIClick(); }}
+        >
+          <span className="aqi-alert-dot" style={{ background: aqiLevel.color }} />
+          <span className="aqi-alert-text">
+            Air quality is {aqiLevel.label.toLowerCase()}
+            {numericAqi != null ? ` (AQI ${numericAqi})` : ''}
+          </span>
+          <span className="aqi-alert-action">View details</span>
+        </div>
+      )}
     </div>
   );
 }
