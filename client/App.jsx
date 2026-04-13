@@ -225,9 +225,9 @@ export default function App() {
 
       <header className="header">
         <div className="header-brand">
-          <svg className="header-logo" viewBox="0 0 28 28" fill="none" strokeLinejoin="round" strokeLinecap="round">
-            <path d="M14 2.5C9.5 9 5.5 13.5 5.5 18a8.5 8.5 0 0 0 17 0c0-4.5-4-9-8.5-15.5z" stroke="currentColor" strokeWidth="1.7" fill="currentColor" opacity="0.15"/>
-            <path d="M14 2.5C9.5 9 5.5 13.5 5.5 18a8.5 8.5 0 0 0 17 0c0-4.5-4-9-8.5-15.5z" stroke="currentColor" strokeWidth="1.7" fill="none"/>
+          <svg className="header-logo" viewBox="0 0 24 24" fill="none" strokeLinejoin="round" strokeLinecap="round">
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" stroke="currentColor" strokeWidth="1.7" fill="currentColor" opacity="0.15"/>
+            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" stroke="currentColor" strokeWidth="1.7" fill="none"/>
           </svg>
           <span className="header-name">Nimbus</span>
         </div>
@@ -320,9 +320,9 @@ export default function App() {
           !error && (
             <div className="empty-state">
               <div className="empty-icon">
-                <svg viewBox="0 0 28 28" fill="none" strokeLinejoin="round" strokeLinecap="round">
-                  <path d="M14 2.5C9.5 9 5.5 13.5 5.5 18a8.5 8.5 0 0 0 17 0c0-4.5-4-9-8.5-15.5z" stroke="currentColor" strokeWidth="1.2" fill="currentColor" opacity="0.08"/>
-                  <path d="M14 2.5C9.5 9 5.5 13.5 5.5 18a8.5 8.5 0 0 0 17 0c0-4.5-4-9-8.5-15.5z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+                <svg viewBox="0 0 24 24" fill="none" strokeLinejoin="round" strokeLinecap="round">
+                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" stroke="currentColor" strokeWidth="1.2" fill="currentColor" opacity="0.08"/>
+                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
                 </svg>
               </div>
               <p className="empty-title">Check the weather</p>

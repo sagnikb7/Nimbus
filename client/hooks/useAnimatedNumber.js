@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 
-export default function useAnimatedNumber(target, duration = 500) {
-  const [display, setDisplay] = useState(target);
-  const prevRef = useRef(target);
+export default function useAnimatedNumber(target, duration = 800) {
+  const [display, setDisplay] = useState(0);
+  const prevRef = useRef(0);
   const rafRef = useRef(null);
 
   useEffect(() => {
@@ -20,7 +20,13 @@ export default function useAnimatedNumber(target, duration = 500) {
     function animate(now) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+
+      // Spring-style easing: slow start, accelerates, then settles gently
+      // ease-in-out quartic for a more dynamic feel
+      const eased = progress < 0.5
+        ? 8 * progress * progress * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 4) / 2;
+
       setDisplay(Math.round(start + diff * eased));
 
       if (progress < 1) {

@@ -694,6 +694,20 @@ body::before {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   transition: background 0.8s ease;
+  animation: tempReveal 0.9s ease-out both;
+}
+
+@keyframes tempReveal {
+  from {
+    opacity: 0;
+    filter: blur(18px);
+    transform: translateY(20px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
 }
 
 .current-condition {
