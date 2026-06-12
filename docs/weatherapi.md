@@ -61,8 +61,18 @@ rest of the app stays provider-agnostic. See `client/components/SearchBar.jsx`.
 
 ## Weather icons — Meteocons (`@bybas/weather-icons`, MIT)
 
-Bundled SVGs in `public/wx/`, mapped from WeatherAPI `code` + `is_day` via
-`utils/weatherIcon.js` (all 60 codes covered). Source for adding icons:
-`https://cdn.jsdelivr.net/npm/@bybas/weather-icons@2.0.0/production/fill/all/{name}.svg`
-(note: `gh/basmilius/…` and `production/fill/svg/` paths 404). `ShareCard` intentionally
-keeps the WeatherAPI raster PNG — html2canvas rasterizes gradient SVGs unreliably.
+**These are the _animated_ Meteocons, not static.** Each SVG in `public/wx/` (31 files)
+carries native **SMIL** animation (`<animate>` / `<animateTransform>`) — e.g. `clear-day.svg`
+rotates the sun 360° over 45s, `rain.svg` has 6 animated drops, `thunderstorms-*` flash.
+
+- **Source / how to add one:**
+  `https://cdn.jsdelivr.net/npm/@bybas/weather-icons@2.0.0/production/fill/all/{name}.svg`
+  (note: `gh/basmilius/…` and `production/fill/svg/` paths 404 — use `@bybas` +
+  `production/fill/all/`). Download into `public/wx/` and map the code in `utils/weatherIcon.js`.
+- **Mapping:** `getWeatherIcon(code, is_day)` → `/wx/{name}.svg` (all 60 WeatherAPI codes
+  covered; `SUN_ICONS` for the sunrise/sunset/moon glyphs). `utils/weatherIcon.js`.
+- **Rendered as `<img src=…>`** in `CurrentWeather` / `Forecast` / `HourlyForecast`. This
+  matters: **SMIL animations DO play through `<img>`** (CSS/JS-driven SVG animation would
+  not — SMIL does), so the icons animate live in the app with zero JS.
+- **`ShareCard` exception:** uses the WeatherAPI **raster PNG**, because html2canvas can't
+  reliably rasterize gradient/animated SVGs into the share image.

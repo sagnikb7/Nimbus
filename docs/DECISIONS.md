@@ -130,10 +130,10 @@ Keep entries short; link to code/`CLAUDE.md` for detail.
 - **Rationale:** Modern weather apps (Apple, Carrot, Pixel) sit around 110–160px hero temp; 218px was visually heavy and starved the rest of the screen. Splitting the sun widget is a free height win because it was already a self-contained unit with its own `border-top` divider. Verified at 390×844 / 768×1024 / 1280×800 — pills now above-the-fold on iPad+ and visible on mobile.
 - **Status:** ✅ Done.
 
-## 2026-06-12 — Weather icons → Meteocons (static SVG)
+## 2026-06-12 — Weather icons → Meteocons (animated SMIL SVG)
 
 - **Context:** Condition icons were WeatherAPI CDN raster PNGs (`//cdn.weatherapi.com/weather/64x64/...`) — soft when scaled, fixed color, stylistically clashing with the crisp inline-SVG UI icons. The single weakest visual element.
-- **Decision:** Replace with **Meteocons** (Bas Milius), static fill SVGs, bundled locally and mapped from WeatherAPI `code` + `is_day`.
+- **Decision:** Replace with **Meteocons** (Bas Milius), the **animated** fill SVGs (native SMIL — sun rotates, rain falls, bolts flash), bundled locally and mapped from WeatherAPI `code` + `is_day`. Rendered via `<img src>`, through which SMIL animation still plays (CSS/JS-driven SVG would not). Correction (2026-06-13): earlier called "static" here — they animate.
 - **Rationale:** MIT-licensed, premium look, day/night variants, crisp vector, theme-independent color, removes a CDN dependency (better offline/PWA).
 - **Source (verified):** `https://cdn.jsdelivr.net/npm/@bybas/weather-icons@2.0.0/production/fill/all/{name}.svg`. (Note: `gh/basmilius/...` and `production/fill/svg/` paths 404 — use `@bybas` + `production/fill/all/`.)
 - **Status:** ✅ Done.
