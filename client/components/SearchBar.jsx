@@ -198,6 +198,26 @@ export default function SearchBar({ onSearch, onSelectPlace, loading, onUseLocat
               </li>
             );
           })}
+          <li className="search-attribution" role="presentation">
+            Geocoding by{' '}
+            <a
+              href="https://open-meteo.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              Open-Meteo
+            </a>{' '}
+            ·{' '}
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              CC BY 4.0
+            </a>
+          </li>
         </ul>
       )}
     </div>
