@@ -12,6 +12,7 @@ cities are keyed, and a design pass on the current-weather hero.
 
 ## ✅ Done (recent)
 
+- **Phase 1 — severe weather alerts** — `&alerts=yes` added to both `server/routes/weather.js` and `netlify/functions/weather.js` (mirrors in sync; response now carries an `alerts` object). New `AlertsBanner.jsx` renders above the hero when `alerts.alert[]` is non-empty: most-severe-first, expandable rows (event, areas, severity pill, effective→expires window, desc, instruction), dismissible, with mood-independent severe/moderate/advisory tones. Verified in dark + light via injected-alert screenshots (globally calm right now, so `alert[]` is empty on live data).
 - **Phase 0 quick wins** — (1) **Open-Meteo CC-BY 4.0 attribution** added as a non-interactive footer row in the search dropdown (links Open-Meteo + the license); clears the long-standing TODO. (2) **Condition-code coverage completed** — `weatherIcon.js` now maps all 60 WeatherAPI codes; the 12 unmapped haze/dust/smoke/smog codes get 6 new bundled Meteocons (`haze-day/night`, `dust-day/night`, `dust-wind`, `smoke`) instead of the `cloudy` fallback. Verified via build + dropdown screenshot.
 
 - **Performance pass (shimmer fix)** — killed the perpetually-animated ambient bg gradient (root cause of the shimmer behind glass cards), halved backdrop blur (40→24 cards, 48→28 dock), dropped `filter: blur` from entry animations, removed `drop-shadow` from icons, capped particle counts by ~40%, GPU-promoted particles via `will-change`. Visual fidelity preserved across all breakpoints. See DECISIONS.md.
@@ -36,7 +37,9 @@ cities are keyed, and a design pass on the current-weather hero.
 
 ## ⏳ In flight / next
 
-_Nothing in flight._ **Phase 1 is next** (per the agreed sequencing plan): land the server-side `alerts=yes` flag on both the Express route and the Netlify function (keep mirrors in sync), then build the severe-weather alerts banner above the hero. After that, Phase 2 batches the P0 UI items by component (HourlyForecast, Forecast, WeatherDetails) so each file is touched once.
+_Nothing in flight._ **Phase 2 is next** (per the agreed sequencing plan): batch the P0 UI items by component so each file is touched once — HourlyForecast (rain-probability bars + cloud-cover fill), Forecast (max-wind/snow chips + tomorrow drill-down), WeatherDetails (dewpoint pill + pressure-trend arrow), plus the Moon-phase and Visibility-detail cards.
+
+**Sidequest queued (2026-06-13):** PM-level audit of the accent + dynamic-particle systems — how UI/background react to city/weather changes — to chart an "award-winning dynamic weather system" plan. Findings to become actionable items (new md or ROADMAP).
 
 ## ⚠️ Known limitations / watch-outs
 

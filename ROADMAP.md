@@ -33,7 +33,7 @@ free 100k-calls/month plan. Only the 7+ day forecast and pollen require a paid b
 
 These are the highest leverage: zero added cost, immediate user value.
 
-- [ ] **Severe weather alerts banner** — add `alerts=yes` to the existing `forecast.json` call. Render a dismissible amber/red banner above the hero when `alerts.alert[]` is non-empty. Show headline + tap-to-expand for `desc`/`instruction`. *Effort: S · Endpoint: existing*
+- [x] **Severe weather alerts banner** — `alerts=yes` added to `forecast.json`; dismissible banner above the hero renders when `alerts.alert[]` is non-empty. Most-severe-first, expandable rows (event/areas/severity pill/window/desc/instruction), mood-independent severe/moderate/advisory tones. *Done — see `AlertsBanner.jsx`.*
 - [ ] **Hourly rain probability** — render `chance_of_rain` (already in `hour[]`) as a thin bar under each `HourlyForecast` tile. Color the bar with `--accent` when ≥40%. *Effort: S · Endpoint: existing*
 - [ ] **Moon phase + illumination card** — `forecast.forecastday[0].astro` already returns `moon_phase`, `moon_illumination`, `moonrise`, `moonset`. Add a `MoonPhase` glass card (sibling of `SunriseSunset`) with an illuminated circle SVG, phase name, and rise/set times. *Effort: M · Endpoint: existing*
 - [ ] **Dewpoint pill in WeatherDetails** — `current.dewpoint_c/f` already returned. Add to the carousel with a one-line plain-English interpretation ("Muggy" / "Comfortable" / "Dry") based on °C thresholds (>20=muggy, 12-20=comfortable, <12=dry). *Effort: S · Endpoint: existing*
@@ -63,7 +63,7 @@ These wrap existing fields in user-friendly logic. No new endpoints needed.
 
 - [x] **Condition code coverage** — `utils/weatherIcon.js` now maps **all 60** WeatherAPI codes (verified against [conditions.json](https://www.weatherapi.com/docs/weather_conditions.json)). The previously-unmapped 12 (`1012, 1015, 1018, 1021, 1024, 1027, 1033, 1036, 1039, 1042, 1045, 1048`) were the haze/dust/smoke/smog family — now mapped to bundled `haze`, `dust`, `dust-wind`, and `smoke` Meteocons instead of falling through to `cloudy`. _(The old "48 of 62 — missing fog/blizzard variants" note was inaccurate; the gaps were atmospheric-obscuration codes.)_
 - [ ] **Auto-detect location on first visit** — prompt `navigator.geolocation` on empty state instead of requiring a manual search. Friction killer.
-- [ ] **Server-side `alerts=yes` flag** — add `&alerts=yes` to both `server/routes/weather.js` and `netlify/functions/weather.js` (keep mirrors in sync) so the alerts banner has data to render.
+- [x] **Server-side `alerts=yes` flag** — added to both `server/routes/weather.js` and `netlify/functions/weather.js` (mirrors in sync). *Done.*
 
 ## P2 — Polish & power-user
 
