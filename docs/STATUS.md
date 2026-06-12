@@ -39,7 +39,14 @@ cities are keyed, and a design pass on the current-weather hero.
 
 _Nothing in flight._ **Phase 2 is next** (per the agreed sequencing plan): batch the P0 UI items by component so each file is touched once — HourlyForecast (rain-probability bars + cloud-cover fill), Forecast (max-wind/snow chips + tomorrow drill-down), WeatherDetails (dewpoint pill + pressure-trend arrow), plus the Moon-phase and Visibility-detail cards.
 
-**Sidequest queued (2026-06-13):** PM-level audit of the accent + dynamic-particle systems — how UI/background react to city/weather changes — to chart an "award-winning dynamic weather system" plan. Findings to become actionable items (new md or ROADMAP).
+**Dynamic-weather sidequest — audit done, plan written (2026-06-13).** PM audit of the
+accent + particle systems is complete; findings + milestones are in
+`docs/DYNAMIC_WEATHER_PLAN.md` (linked from ROADMAP). Decisions: CSS-only ceiling (no canvas),
+structural fixes first (M1), decouple `--mood-accent`/`--ui-accent` now. Not yet started.
+
+**Also shipped this session:** number roll-up refined — it no longer counts from 0 on every
+city load (init-from-target; CSS `tempReveal` carries the entrance), only animates on real
+change (°C↔°F, refresh); 800→550ms, ease-out cubic. See `hooks/useAnimatedNumber.js`.
 
 ## ⚠️ Known limitations / watch-outs
 

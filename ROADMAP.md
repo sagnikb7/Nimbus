@@ -29,6 +29,16 @@ free 100k-calls/month plan. Only the 7+ day forecast and pollen require a paid b
 
 ---
 
+## 🎨 Dynamic weather system (accent + particles)
+
+A focused design initiative — turn the 6 discrete moods into a continuous, data-driven
+atmosphere (CSS-only). Full audit, decisions, and milestone breakdown live in
+**[`docs/DYNAMIC_WEATHER_PLAN.md`](docs/DYNAMIC_WEATHER_PLAN.md)**. Headline: night currently
+erases the weather (clear night == storm night), intensity is ignored (drizzle == downpour),
+and the background is frozen. M1 = structural correctness; M2 = push CSS to its ceiling.
+
+---
+
 ## P0 — Data already fetched, UI missing (no new API calls)
 
 These are the highest leverage: zero added cost, immediate user value.
