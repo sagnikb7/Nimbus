@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import SearchBar from './components/SearchBar';
 import CurrentWeather from './components/CurrentWeather';
+import AlertsBanner from './components/AlertsBanner';
 import SunriseSunset from './components/SunriseSunset';
 import WeatherDetails from './components/WeatherDetails';
 import AQIDetail from './components/AQIDetail';
@@ -452,6 +453,7 @@ export default function App() {
 
         {activeWeather ? (
           <div className="weather-content" key={activeKey}>
+            <AlertsBanner alerts={activeWeather.alerts} />
             <CurrentWeather data={activeWeather} tempUnit={tempUnit} />
             {astro && (
               <SunriseSunset

@@ -638,6 +638,191 @@ body::before {
 
 
 /* ===========================
+   Weather Alerts banner
+   =========================== */
+
+/* Semantic tones are mood-independent — a warning must read as a warning
+   regardless of the chromatic mood palette. */
+.alerts-banner {
+  --alert-color: #f59e0b;
+  --alert-tint: rgba(245, 158, 11, 0.10);
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in srgb, var(--alert-color) 40%, transparent);
+  border-left: 3px solid var(--alert-color);
+  border-radius: var(--radius);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  animation: revealUp 0.5s ease both;
+}
+
+.alerts-banner.tone-severe {
+  --alert-color: #f87171;
+  --alert-tint: rgba(248, 113, 113, 0.12);
+}
+.alerts-banner.tone-moderate {
+  --alert-color: #fb923c;
+  --alert-tint: rgba(251, 146, 60, 0.10);
+}
+.alerts-banner.tone-advisory {
+  --alert-color: #fbbf24;
+  --alert-tint: rgba(251, 191, 36, 0.10);
+}
+
+[data-theme="light"] .alerts-banner.tone-severe { --alert-color: #dc2626; }
+[data-theme="light"] .alerts-banner.tone-moderate { --alert-color: #ea580c; }
+[data-theme="light"] .alerts-banner.tone-advisory { --alert-color: #d97706; }
+
+.alerts-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  background: var(--alert-tint);
+}
+
+.alerts-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--alert-color);
+}
+
+.alerts-banner-title {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--alert-color);
+  letter-spacing: 0.01em;
+}
+
+.alerts-dismiss {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.alerts-dismiss:hover {
+  background: var(--alert-tint);
+  color: var(--text-1);
+}
+.alerts-dismiss svg { width: 15px; height: 15px; }
+
+.alerts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.alert-item + .alert-item {
+  border-top: 1px solid var(--glass-border);
+}
+
+.alert-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.alert-summary:hover { background: var(--glass); }
+
+.alert-summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.alert-event {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-1);
+  line-height: 1.25;
+}
+
+.alert-areas {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-severity {
+  flex-shrink: 0;
+  padding: 0.1875rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--alert-tint);
+  color: var(--alert-color);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.alert-chevron {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--text-2);
+  transition: transform 0.2s ease;
+}
+.alert-chevron.open { transform: rotate(180deg); }
+
+.alert-detail {
+  padding: 0 1rem 0.875rem;
+  animation: fadeIn 0.25s ease;
+}
+
+.alert-headline {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-1);
+  line-height: 1.4;
+}
+
+.alert-window {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--alert-color);
+  font-weight: 500;
+}
+
+.alert-desc,
+.alert-instruction {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.alert-instruction {
+  padding-top: 0.625rem;
+  border-top: 1px dashed var(--glass-border);
+  color: var(--text-1);
+}
+
+
+/* ===========================
    Empty State
    =========================== */
 
