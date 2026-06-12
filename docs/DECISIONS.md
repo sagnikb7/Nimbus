@@ -5,6 +5,49 @@ Keep entries short; link to code/`CLAUDE.md` for detail.
 
 ---
 
+## 2026-06-13 — Knowledge base reorg: one tracker, many knowledge files
+
+- **Context:** Tracking was spread across three files (`ROADMAP.md` backlog, `docs/STATUS.md`
+  status/done, `docs/DYNAMIC_WEATHER_PLAN.md` checklists). Status drifted between them and
+  links were inconsistent.
+- **Decision:** Split **tracking** (one file) from **knowledge** (many). All status/backlog/
+  done/checkboxes live in **`docs/TRACKER.md`** only. Knowledge base = `DECISIONS.md` (why),
+  `dynamic-weather.md` (design spec), `particles.md` (moved from root
+  `WEATHER_PARTICLES_GUIDE.md`), `weatherapi.md` (provider reference), `dev-workflow.md` (run +
+  verify), `README.md` (map + protocol). Deleted `ROADMAP.md`, `docs/STATUS.md`,
+  `docs/DYNAMIC_WEATHER_PLAN.md` (content migrated). Updated all cross-links + `CLAUDE.md`.
+- **Rationale:** A single tracker can't drift against itself; knowledge files stay focused and
+  linkable. `CLAUDE.md` now points sessions at `TRACKER.md` first.
+- **Status:** ✅ Done.
+
+## 2026-06-13 — Number animation: animate on change, not count-from-zero
+
+- **Context:** The hero temperature (and feels/AQI/wind) rolled up `0 → value` on every city
+  load — `useAnimatedNumber` initialized at 0 and the hero remounts per city (`key={activeCity}`).
+  A focal number counting from a value it never had read as a gimmick.
+- **Decision:** Initialize the hook **from the target** so first mount shows the real value
+  instantly (the CSS `tempReveal` carries the entrance); animate **only when the value changes
+  while mounted** (°C↔°F toggle, refresh delta). Also `800→550 ms` and ease-in-out-quartic →
+  **ease-out cubic** (reads immediately, settles softly).
+- **Rationale:** Keeps the *meaningful* motion (unit/refresh deltas), drops the gimmicky
+  count-from-0. Verified: instant on load; `25→…→77` on toggle.
+- **Status:** ✅ Done. (`hooks/useAnimatedNumber.js`.)
+
+## 2026-06-13 — Dynamic weather direction: night-as-modifier, accent split, CSS ceiling
+
+- **Context:** PM audit of the accent + particle systems found the "dynamic" weather is naive:
+  night collapses all weather to one purple "night" mood (clear night == storm night,
+  verified by screenshot), intensity is ignored (drizzle == downpour), the background is frozen,
+  and the accent doubles as both mood color and UI control color. Full audit in
+  [`dynamic-weather.md`](dynamic-weather.md).
+- **Decision (3 forks, with the user):** (1) **CSS-only ceiling** — no canvas/WebGL; push CSS
+  (precip streaks, parallax, wind angle, transform-only motion) instead. (2) **Structural
+  fixes first (M1)** before the full reframe. (3) **Decouple `--mood-accent` (decorative) from
+  `--ui-accent` (controls, WCAG-AA on glass)** now.
+- **Rationale:** Highest correctness-per-effort, respects the perf pass, fixes a real a11y
+  risk (pale moods → illegible controls). M1 is all CSS/JS, low risk.
+- **Status:** ⏳ Planned — tasks in [`TRACKER.md`](TRACKER.md); spec in `dynamic-weather.md`.
+
 ## 2026-06-13 — Performance pass: kill ambient animation, halve backdrop blur, cap particles, drop entry-blur
 
 - **Symptom:** Visible shimmer near the hero and behind it. Audit traced it to a perpetually-animated 3-layer radial gradient (`body::before`, 45s scale+translate cycle) underneath universal `backdrop-filter: blur(40px)` glass cards. Each frame the browser had to re-rasterize the blurred backdrop, landing at slightly different subpixel positions → shimmer.
@@ -32,8 +75,8 @@ Keep entries short; link to code/`CLAUDE.md` for detail.
   3. **`/api/weather` proxy stays** — that route still hides a real API key.
 - **Rationale:** Better data + simpler architecture + one less Netlify function to keep in sync = a net win. The old proxy existed only because WeatherAPI required a key; Open-Meteo doesn't.
 - **Free-tier limits:** 600/min, 5,000/hour, 10,000/day, 300,000/month. Debounce (300ms) + in-memory `Map` cache in SearchBar means a power user could type for hours without crossing 100 calls. Quota is a non-issue.
-- **Trade-off:** Open-Meteo non-commercial use is CC-BY 4.0 — credit is required. **TODO:** add a small "Geocoding by Open-Meteo · Weather by WeatherAPI.com" credit line somewhere (footer of empty state, or a small line under the dock). Not blocking, but should land within the next session.
-- **Status:** ✅ Done (attribution credit pending).
+- **Trade-off:** Open-Meteo non-commercial use is CC-BY 4.0 — credit is required. Resolved 2026-06-13: a `.search-attribution` footer row in the autocomplete dropdown links Open-Meteo + the CC-BY 4.0 license.
+- **Status:** ✅ Done.
 
 ## 2026-06-13 — Auto-add saved cities + pinnable dock, share moves to header
 
@@ -93,14 +136,14 @@ Keep entries short; link to code/`CLAUDE.md` for detail.
 - **Decision:** Replace with **Meteocons** (Bas Milius), static fill SVGs, bundled locally and mapped from WeatherAPI `code` + `is_day`.
 - **Rationale:** MIT-licensed, premium look, day/night variants, crisp vector, theme-independent color, removes a CDN dependency (better offline/PWA).
 - **Source (verified):** `https://cdn.jsdelivr.net/npm/@bybas/weather-icons@2.0.0/production/fill/all/{name}.svg`. (Note: `gh/basmilius/...` and `production/fill/svg/` paths 404 — use `@bybas` + `production/fill/all/`.)
-- **Status:** ⏳ In progress — see `STATUS.md`.
+- **Status:** ✅ Done.
 
 ## 2026-06-12 — Sun timeline: full day/night redesign
 
 - **Context:** `SunriseSunset` only ever showed today's sunrise→sunset and hid its dot at night, so at night it was a dead, meaningless bar. No "time until" info.
 - **Decision:** Three windows (pre-dawn / daytime / after-sunset), use tomorrow's `forecast.forecastday[1].astro` for next sunrise, add a countdown headline ("Sunrise in 6h 40m") + daylight duration, moon at night.
 - **Rationale:** Turns a decorative bar into a useful "what's next" widget; surfaces data we already fetch.
-- **Status:** ⏳ Planned — see `STATUS.md`.
+- **Status:** ✅ Done.
 
 ## 2026-06-12 — Search bar moved into the header
 

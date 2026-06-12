@@ -1,6 +1,6 @@
 # Weather Particles Guide
 
-> ⚠️ **Policy update (2026-06-13) — `docs/DYNAMIC_WEATHER_PLAN.md` takes precedence.**
+> ⚠️ **Policy update (2026-06-13) — [`dynamic-weather.md`](dynamic-weather.md) takes precedence.**
 > The dynamic-weather initiative supersedes parts of this guide. Specifically, the
 > **"circles only" and "no rotation" constraints are lifted for precipitation** (rain/storm
 > may be elongated streaks and may rotate/skew to express wind angle). What still holds:
@@ -37,7 +37,7 @@ No SVGs. No special branches. Every particle is a styled `<div>`.
 visual language — **soft radial-gradient circles** — achieving variety through motion, speed,
 count, and color rather than shape. This keeps the ambient layer cohesive.
 
-**Amended (per `DYNAMIC_WEATHER_PLAN.md`):** precipitation that should *read as precipitation*
+**Amended (per [`dynamic-weather.md`](dynamic-weather.md)):** precipitation that should *read as precipitation*
 (rain, storm drops) may break from circles into **elongated streaks** and may **lean with the
 wind**. Variety now comes from shape *and* motion where it improves legibility of the actual
 weather. Intensity (drizzle → downpour) scales count/speed/opacity. The "no canvas / no SVG"
@@ -374,7 +374,7 @@ Two rapid flashes (0.6 then 0.3) in the first 4% of the cycle, then darkness for
 ## Hard Rules
 
 1. **Circles for ambient particles** — orbs, stars, clouds, and snow keep `width === height`.
-   **Precipitation (rain/storm) may be elongated streaks** (per `DYNAMIC_WEATHER_PLAN.md` M2);
+   **Precipitation (rain/storm) may be elongated streaks** (per [`dynamic-weather.md`](dynamic-weather.md) M2);
    until M2 lands the code is still all-circles.
 2. **No SVGs, no canvas, no WebGL** — every particle is a styled `<div>`. This boundary is firm.
 3. **`border-radius: 50%`** lives in CSS, not inline styles.
