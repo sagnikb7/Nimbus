@@ -9,6 +9,12 @@ const DAY_NIGHT = {
   1009: ['overcast-day', 'overcast-night'],      // Overcast
   1135: ['fog-day', 'fog-night'],                // Fog
   1147: ['fog-day', 'fog-night'],                // Freezing fog
+  // atmospheric obscuration — haze / dust (day/night Meteocons)
+  1012: ['haze-day', 'haze-night'],              // Haze
+  1015: ['haze-day', 'haze-night'],              // Dust haze
+  1036: ['haze-day', 'haze-night'],              // Smoky haze
+  1045: ['dust-day', 'dust-night'],              // Saharan dust
+  1048: ['dust-day', 'dust-night'],              // Dust
   1063: ['partly-cloudy-day-rain', 'partly-cloudy-night-rain'],   // Patchy rain
   1150: ['partly-cloudy-day-rain', 'partly-cloudy-night-rain'],   // Patchy light drizzle
   1180: ['partly-cloudy-day-rain', 'partly-cloudy-night-rain'],   // Patchy light rain
@@ -24,6 +30,10 @@ const DAY_NIGHT = {
 const FIXED = {
   1006: 'cloudy',
   1030: 'mist',
+  // wind-driven dust / sand storms → single windswept-dust icon
+  1018: 'dust-wind', 1021: 'dust-wind', 1024: 'dust-wind', 1027: 'dust-wind',
+  // smoke / smog (pollution) → smoke icon
+  1033: 'smoke', 1039: 'smoke', 1042: 'smoke',
   // drizzle / freezing drizzle
   1072: 'drizzle', 1153: 'drizzle', 1168: 'drizzle', 1171: 'drizzle',
   // rain (incl. heavy — no extreme-rain icon, falls back to rain)
