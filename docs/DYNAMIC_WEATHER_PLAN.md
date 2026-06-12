@@ -91,8 +91,10 @@ Requires **amending `WEATHER_PARTICLES_GUIDE.md`** (lift "circles only" for prec
 
 ## Hygiene (do alongside)
 
-- [ ] **H.1 — Update `WEATHER_PARTICLES_GUIDE.md`** — correct the stale counts now; revise the
-  hard rules in M2 when streaks/parallax land.
+- [x] **H.1 — Update `WEATHER_PARTICLES_GUIDE.md`** — done (2026-06-13): stale counts corrected
+  (now match code), supersession banner added, and the "circles only" / "no rotation" hard rules
+  pre-amended to allow precip streaks + wind-angle rotation (no-canvas/SVG boundary kept). Code
+  stays all-circles until M2 implements the streaks.
 - [ ] **H.2 — Log a `DECISIONS.md` entry** for the night-as-modifier model and the
   `--mood-accent` / `--ui-accent` split.
 

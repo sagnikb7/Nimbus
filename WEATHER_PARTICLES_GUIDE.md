@@ -1,5 +1,14 @@
 # Weather Particles Guide
 
+> ⚠️ **Policy update (2026-06-13) — `docs/DYNAMIC_WEATHER_PLAN.md` takes precedence.**
+> The dynamic-weather initiative supersedes parts of this guide. Specifically, the
+> **"circles only" and "no rotation" constraints are lifted for precipitation** (rain/storm
+> may be elongated streaks and may rotate/skew to express wind angle). What still holds:
+> **no `<canvas>`, no WebGL, no `<svg>` particles** — everything remains styled `<div>`s.
+> Non-precip particles (orbs, stars, clouds, snow) stay circular unless that plan says otherwise.
+> The current code still renders all-circles until Milestone 2 lands; until then this guide
+> describes the live implementation, with the amended rules below marking the target.
+
 Reference this file before making ANY edits to `client/components/WeatherParticles.jsx` or particle-related CSS in `client/App.css`.
 
 ## Architecture
@@ -24,13 +33,21 @@ No SVGs. No special branches. Every particle is a styled `<div>`.
 
 ## Design Philosophy
 
-Every mood uses the same visual language: **soft radial-gradient circles**. The system achieves variety through motion direction, speed, count, and color — not through shape changes. This keeps particles feeling like a cohesive ambient layer rather than a weather simulation.
+**Original (still true for ambient particles):** orbs, stars, clouds, and snow use the same
+visual language — **soft radial-gradient circles** — achieving variety through motion, speed,
+count, and color rather than shape. This keeps the ambient layer cohesive.
+
+**Amended (per `DYNAMIC_WEATHER_PLAN.md`):** precipitation that should *read as precipitation*
+(rain, storm drops) may break from circles into **elongated streaks** and may **lean with the
+wind**. Variety now comes from shape *and* motion where it improves legibility of the actual
+weather. Intensity (drizzle → downpour) scales count/speed/opacity. The "no canvas / no SVG"
+boundary is unchanged.
 
 ### Consistent properties across all moods
 
 | Property | Value |
 |----------|-------|
-| Shape | Perfect circle (`border-radius: 50%`, `width === height`) |
+| Shape | Circle for ambient particles (`border-radius: 50%`, `width === height`); elongated streak allowed for rain/storm (M2) |
 | Color technique | `radial-gradient(circle, rgba(R, G, B, 0.6) 0%, transparent 70%)` |
 | Element type | `<div>` — no SVGs, no canvas |
 | Animation timing | `linear infinite` |
@@ -54,14 +71,18 @@ Each mood's particle color uses the mood accent at 0.6 alpha in a radial gradien
 
 ## Mood → Particle Mapping
 
+Counts below reflect the **current code** (`WeatherParticles.jsx` is the source of truth — it
+was reduced ~40% in the perf pass). Earlier revisions of this guide listed pre-perf-pass
+counts (14/30/22/35/25/45); those are wrong.
+
 | Mood | Type | Count | Size | Speed | Opacity | Direction | Animation |
 |------|------|-------|------|-------|---------|-----------|-----------|
-| clear | `orb` | 14 | 4-10px | 16-26s | 0.10-0.30 | bottom → top | `floatOrb` |
-| night | `star` | 30 | 2-5px | 3-6s | 0.10-0.30 | stationary | `twinkle` |
-| cloudy | `cloud-circle` | 22 | 15-70px | 20-40s | 0.06-0.20 | ambient wander | `cloudFloat` |
-| rainy | `raindrop` | 35 | 3-7px | 1.0-2.0s | 0.12-0.35 | top → bottom | `rainFall` |
-| snowy | `snowflake` | 25 | 3-8px | 6-14s | 0.15-0.40 | top → bottom | `snowDrift` |
-| stormy | `storm-drop` + `lightning` | 45 + 1 | 3-6px | 0.6-1.4s | 0.12-0.30 | top → bottom + flash | `stormFall` + `lightning` |
+| clear | `orb` | 10 | 4-10px | 16-26s | 0.10-0.30 | bottom → top | `floatOrb` |
+| night | `star` | 18 | 2-5px | 3-6s | 0.10-0.30 | stationary | `twinkle` |
+| cloudy | `cloud-circle` | 14 | 15-70px | 20-40s | 0.06-0.20 | ambient wander | `cloudFloat` |
+| rainy | `raindrop` | 20 | 3-7px | 1.0-2.0s | 0.12-0.35 | top → bottom | `rainFall` |
+| snowy | `snowflake` | 16 | 3-8px | 6-14s | 0.15-0.40 | top → bottom | `snowDrift` |
+| stormy | `storm-drop` + `lightning` | 26 + 1 | 3-6px | 0.6-1.4s | 0.12-0.30 | top → bottom + flash | `stormFall` + `lightning` |
 
 ---
 
@@ -71,7 +92,7 @@ Warm amber circles rising like thermals / heat shimmer.
 
 ### Particle generation (WeatherParticles.jsx)
 
-14 orbs, each with randomized inline styles:
+10 orbs, each with randomized inline styles:
 - `left`: random 5-95% (spread across full width)
 - `width` / `height`: random 4-10px (equal — perfect circles)
 - `animationDuration`: random 16-26s
@@ -112,7 +133,7 @@ Small purple dots pulsing in place like stars.
 
 ### Particle generation (WeatherParticles.jsx)
 
-30 stars, each with randomized inline styles:
+18 stars, each with randomized inline styles:
 - `left`: random 2-98% (spread across full width)
 - `top`: random 2-70% (scattered across upper portion)
 - `width` / `height`: random 2-5px (equal — perfect circles)
@@ -150,7 +171,7 @@ Slate circles scattered across the screen, gently wandering in organic loops wit
 
 ### Particle generation (WeatherParticles.jsx)
 
-22 circles, each with randomized inline styles:
+14 circles, each with randomized inline styles:
 - `left`: random 0-100% (spread across full width)
 - `top`: random 0-100% (spread across full height)
 - `width` / `height`: random 15-70px (equal — perfect circles, widest range of all moods)
@@ -198,7 +219,7 @@ Blue circles falling steadily like rain catching light.
 
 ### Particle generation (WeatherParticles.jsx)
 
-35 drops, each with randomized inline styles:
+20 drops, each with randomized inline styles:
 - `left`: random 0-100% (spread across full width)
 - `width` / `height`: random 3-7px (equal — perfect circles)
 - `animationDuration`: random 1.0-2.0s (fast)
@@ -239,7 +260,7 @@ Ice-blue circles falling slowly with gentle sway.
 
 ### Particle generation (WeatherParticles.jsx)
 
-25 flakes, each with randomized inline styles:
+16 flakes, each with randomized inline styles:
 - `left`: random 0-100% (spread across full width)
 - `width` / `height`: random 3-8px (equal — perfect circles)
 - `animationDuration`: random 6-14s (slow, leisurely)
@@ -280,7 +301,7 @@ Violet circles falling hard and fast, plus a full-screen lightning flash.
 
 ### Particle generation (WeatherParticles.jsx)
 
-45 storm drops + 1 lightning overlay:
+26 storm drops + 1 lightning overlay:
 
 **Storm drops** — each with randomized inline styles:
 - `left`: random 0-100% (spread across full width)
@@ -352,14 +373,18 @@ Two rapid flashes (0.6 then 0.3) in the first 4% of the cycle, then darkness for
 
 ## Hard Rules
 
-1. **Circles only** — `width` must always equal `height`. Never use different values.
-2. **No SVGs** — render as `<div>` elements, not `<svg>`, `<ellipse>`, or `<circle>`.
+1. **Circles for ambient particles** — orbs, stars, clouds, and snow keep `width === height`.
+   **Precipitation (rain/storm) may be elongated streaks** (per `DYNAMIC_WEATHER_PLAN.md` M2);
+   until M2 lands the code is still all-circles.
+2. **No SVGs, no canvas, no WebGL** — every particle is a styled `<div>`. This boundary is firm.
 3. **`border-radius: 50%`** lives in CSS, not inline styles.
 4. **Color via radial-gradient** — hardcoded mood RGB at 0.6 alpha, fading to transparent at 70%. Never use `var(--accent)`.
 5. **Consistent gradient formula** — `radial-gradient(circle, rgba(R, G, B, 0.6) 0%, transparent 70%)` for every mood.
 6. **Respect `prefers-reduced-motion`** — the parent `.weather-particles` is hidden entirely when reduced motion is preferred.
 7. **`useMemo` on mood** — particles regenerate only when mood changes, never on re-render.
-8. **No rotation** — circles are rotationally symmetric; `rotate()` in keyframes is unnecessary.
+8. **Rotation** — unnecessary for circular particles (rotationally symmetric). Elongated
+   precipitation streaks (M2) may rotate/skew to express **wind angle** — that is the one
+   sanctioned use of `rotate()`/`skew()`.
 9. **`will-change`** — use `transform` for motion particles, `opacity` for stationary particles (stars).
 10. **Stormy uses `storm-drop`, not `raindrop`** — stormy has its own CSS class, color (violet), and animation (`stormFall`).
 
