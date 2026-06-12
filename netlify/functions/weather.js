@@ -11,7 +11,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const url = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&q=${encodeURIComponent(city)}&days=3&aqi=yes`;
+    const url = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&q=${encodeURIComponent(city)}&days=3&aqi=yes&alerts=yes`;
     const response = await fetch(url);
     const data = await response.json();
 
