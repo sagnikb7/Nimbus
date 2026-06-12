@@ -61,7 +61,7 @@ These wrap existing fields in user-friendly logic. No new endpoints needed.
 
 ## P2 — Engineering hygiene
 
-- [ ] **Condition code coverage** — `utils/weatherIcon.js` maps **48 of 62** WeatherAPI codes. Missing: `1012, 1015, 1018, 1021, 1024, 1027, 1033, 1036, 1039, 1042, 1045, 1048` (Patchy rain/snow/sleet nearby, blowing snow, blizzard, fog variants). Currently fall through to the `cloudy` fallback. Source: [conditions.json](https://www.weatherapi.com/docs/weather_conditions.json).
+- [x] **Condition code coverage** — `utils/weatherIcon.js` now maps **all 60** WeatherAPI codes (verified against [conditions.json](https://www.weatherapi.com/docs/weather_conditions.json)). The previously-unmapped 12 (`1012, 1015, 1018, 1021, 1024, 1027, 1033, 1036, 1039, 1042, 1045, 1048`) were the haze/dust/smoke/smog family — now mapped to bundled `haze`, `dust`, `dust-wind`, and `smoke` Meteocons instead of falling through to `cloudy`. _(The old "48 of 62 — missing fog/blizzard variants" note was inaccurate; the gaps were atmospheric-obscuration codes.)_
 - [ ] **Auto-detect location on first visit** — prompt `navigator.geolocation` on empty state instead of requiring a manual search. Friction killer.
 - [ ] **Server-side `alerts=yes` flag** — add `&alerts=yes` to both `server/routes/weather.js` and `netlify/functions/weather.js` (keep mirrors in sync) so the alerts banner has data to render.
 

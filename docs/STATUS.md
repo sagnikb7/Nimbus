@@ -12,10 +12,12 @@ cities are keyed, and a design pass on the current-weather hero.
 
 ## ✅ Done (recent)
 
+- **Phase 0 quick wins** — (1) **Open-Meteo CC-BY 4.0 attribution** added as a non-interactive footer row in the search dropdown (links Open-Meteo + the license); clears the long-standing TODO. (2) **Condition-code coverage completed** — `weatherIcon.js` now maps all 60 WeatherAPI codes; the 12 unmapped haze/dust/smoke/smog codes get 6 new bundled Meteocons (`haze-day/night`, `dust-day/night`, `dust-wind`, `smoke`) instead of the `cloudy` fallback. Verified via build + dropdown screenshot.
+
 - **Performance pass (shimmer fix)** — killed the perpetually-animated ambient bg gradient (root cause of the shimmer behind glass cards), halved backdrop blur (40→24 cards, 48→28 dock), dropped `filter: blur` from entry animations, removed `drop-shadow` from icons, capped particle counts by ~40%, GPU-promoted particles via `will-change`. Visual fidelity preserved across all breakpoints. See DECISIONS.md.
 - **Search dropdown fixed (legibility)** — was a glass surface that bled the hero text through it; now a solid menu (`#14141c` dark / `#fff` light) with proper elevation shadow and an accent-tinted active row with a 3px left bar. Mood-aware via `color-mix`.
 - **admin2 in search dropdown** — Open-Meteo's `admin2` (district) now shows when present and distinct from `admin1`, disambiguating same-name+same-state matches (e.g. three "Medinipur, Odisha" now read as "Kendujhar, Odisha" / "Deogarh, Odisha" / etc.).
-- **City autocomplete swapped to Open-Meteo geocoding** — keyless, CORS-open, GeoNames-backed. Far richer dataset (Gopalpur returns 5 distinct cities; Tokyo also matches Papua New Guinea / Nepal / etc.). `/api/search` proxy deleted entirely — Express route, Netlify function, and redirect removed. `/api/weather` proxy stays (real API key). **TODO:** add small CC-BY 4.0 attribution credit. See DECISIONS.md.
+- **City autocomplete swapped to Open-Meteo geocoding** — keyless, CORS-open, GeoNames-backed. Far richer dataset (Gopalpur returns 5 distinct cities; Tokyo also matches Papua New Guinea / Nepal / etc.). `/api/search` proxy deleted entirely — Express route, Netlify function, and redirect removed. `/api/weather` proxy stays (real API key). CC-BY 4.0 attribution now shown in the search dropdown footer (done — see Phase 0 above). See DECISIONS.md.
 - **Saved cities are now auto-add + pinnable** — search auto-enters the city, FIFO-evicts the oldest unpinned at cap 5. Dock pills have a pin glyph (outlined → filled accent on toggle). Legacy saved entries migrated to `pinned: true`. Save button removed from hero; share moved into the header chrome next to refresh/°C/theme. See DECISIONS.md.
 - **Forecast / sun polish** — Today row is a clean rounded rect with proper inter-row gaps (dropped the dangling left stripe and the border-top dividers). Sun endpoint icons removed (the SUNRISE/SUNSET text already disambiguates; the two meteocons were near-identical).
 - **3-Day Forecast overhaul** — date subtitles, conditional chips (precip / max-wind / UV / snow when meaningful), temperature range bar across the 3 days, and a subtle accent treatment on the "Today" row. Surfaces `day.maxwind_kph`, `day.uv`, `day.totalsnow_cm`, `day.daily_chance_of_rain/snow` we were already fetching. See DECISIONS.md.
@@ -34,7 +36,7 @@ cities are keyed, and a design pass on the current-weather hero.
 
 ## ⏳ In flight / next
 
-_Nothing in flight._ Candidate next steps from `ROADMAP.md`: natural-language daily summary, 7–10 day forecast, precipitation timeline. Optional polish: show local time on dock pills for multi-city comparison.
+_Nothing in flight._ **Phase 1 is next** (per the agreed sequencing plan): land the server-side `alerts=yes` flag on both the Express route and the Netlify function (keep mirrors in sync), then build the severe-weather alerts banner above the hero. After that, Phase 2 batches the P0 UI items by component (HourlyForecast, Forecast, WeatherDetails) so each file is touched once.
 
 ## ⚠️ Known limitations / watch-outs
 
