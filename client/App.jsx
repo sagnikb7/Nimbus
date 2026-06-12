@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import SearchBar from './components/SearchBar';
 import CurrentWeather from './components/CurrentWeather';
+import SunriseSunset from './components/SunriseSunset';
 import WeatherDetails from './components/WeatherDetails';
 import AQIDetail from './components/AQIDetail';
 import Forecast from './components/Forecast';
@@ -11,10 +12,10 @@ import ShareCard from './components/ShareCard';
 import WindDetail from './components/WindDetail';
 import { getWeatherMood } from './utils/weatherMood';
 import { captureShareCard, shareOrDownload } from './utils/shareUtils';
-import { getCached, setCache, removeCache, partitionCities } from './utils/weatherCache';
+import { getCached, getCachedByQuery, setCache, removeCache, partitionCities, getLocationKey } from './utils/weatherCache';
 import './App.css';
 
-function FreshnessLabel({ city }) {
+function FreshnessLabel({ cacheKey }) {
   const [, tick] = useState(0);
 
   // Re-render every 60s to keep the relative time current
@@ -23,8 +24,8 @@ function FreshnessLabel({ city }) {
     return () => clearInterval(id);
   }, []);
 
-  if (!city) return null;
-  const hit = getCached(city);
+  if (!cacheKey) return null;
+  const hit = getCached(cacheKey);
   if (!hit) return null;
 
   const secs = Math.floor((Date.now() - hit.ts) / 1000);
@@ -43,9 +44,18 @@ function FreshnessLabel({ city }) {
 }
 
 export default function App() {
+  // Saved cities are objects keyed by stable location identity:
+  //   { key, name, region, country, lat, lon, query, pinned }
+  // Auto-added on search; FIFO-evicted from oldest unpinned at cap 5.
+  // Pinned cities never evict. Legacy entries migrate as pinned (they were
+  // explicitly saved under the old bookmark model).
   const [savedCities, setSavedCities] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('savedCities') || '[]');
+      const raw = JSON.parse(localStorage.getItem('savedCities') || '[]');
+      return raw.map((c) => {
+        if (typeof c === 'string') return { key: null, name: c, query: c, pinned: true };
+        return c.pinned === undefined ? { ...c, pinned: true } : c;
+      });
     } catch {
       return [];
     }
@@ -103,79 +113,116 @@ export default function App() {
     if (Object.keys(cached).length > 0) {
       setSavedWeather(cached);
       const first = savedCities[0];
-      if (cached[first]) setActiveWeather(cached[first]);
+      if (first.key && cached[first.key]) setActiveWeather(cached[first.key]);
     }
 
     // Everything is fresh — no API calls needed
     if (toFetch.length === 0) return;
 
-    // Background-fetch stale + missing cities
+    // Background-fetch stale + missing cities (and unresolved legacy entries)
     Promise.all(
-      toFetch.map((city) =>
-        fetch(`/api/weather?city=${encodeURIComponent(city)}`)
+      toFetch.map((c) =>
+        fetch(`/api/weather?city=${encodeURIComponent(c.query)}`)
           .then((r) => (r.ok ? r.json() : null))
           .catch(() => null)
       )
     ).then((results) => {
-      const newData = {};
-      toFetch.forEach((city, i) => {
-        if (results[i]) {
-          newData[city] = results[i];
-          setCache(city, results[i]);
+      const newWeather = {};
+      const resolved = new Map(); // original saved-city object → resolved object
+
+      results.forEach((data, i) => {
+        if (!data) return;
+        const c = toFetch[i];
+        const key = setCache(data, c.query);
+        newWeather[key] = data;
+
+        // Legacy entry (or one whose key drifted): record its resolved identity
+        if (c.key !== key) {
+          resolved.set(c, {
+            key,
+            name: data.location.name,
+            region: data.location.region,
+            country: data.location.country,
+            lat: data.location.lat,
+            lon: data.location.lon,
+            query: `${data.location.lat},${data.location.lon}`,
+          });
         }
       });
 
-      if (Object.keys(newData).length === 0) return;
+      if (Object.keys(newWeather).length === 0) return;
 
-      setSavedWeather((prev) => ({ ...prev, ...newData }));
+      // Replace any newly-resolved legacy entries (matched by object identity)
+      if (resolved.size > 0) {
+        setSavedCities((prev) => prev.map((c) => resolved.get(c) || c));
+      }
+
+      setSavedWeather((prev) => ({ ...prev, ...newWeather }));
 
       // SWR: silently refresh active weather if it was stale
       setActiveWeather((prev) => {
         if (!prev) {
           const first = savedCities[0];
-          return newData[first] || null;
+          const firstKey = first.key || resolved.get(first)?.key;
+          return (firstKey && newWeather[firstKey]) || null;
         }
-        const name = prev.location?.name;
-        return newData[name] || prev;
+        const k = getLocationKey(prev.location);
+        return newWeather[k] || prev;
       });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleSearch(city) {
+  async function handleSearch(query) {
     setError('');
 
+    // upsertCity: always update weather cache; auto-add to dock if not present
+    // (FIFO-evicts oldest unpinned when at cap 5; silently skips if all pinned).
+    const upsertCity = (key, data) => {
+      setSavedWeather((prev) => ({ ...prev, [key]: data }));
+      setSavedCities((prev) => {
+        if (prev.some((c) => c.key === key)) return prev;
+        const loc = data.location;
+        const entry = {
+          key,
+          name: loc.name,
+          region: loc.region,
+          country: loc.country,
+          lat: loc.lat,
+          lon: loc.lon,
+          query: `${loc.lat},${loc.lon}`,
+          pinned: false,
+        };
+        if (prev.length < 5) return [...prev, entry];
+        const evictIdx = prev.findIndex((c) => !c.pinned);
+        if (evictIdx === -1) return prev; // all pinned — silently skip
+        removeCache(prev[evictIdx].key);
+        return [...prev.slice(0, evictIdx), ...prev.slice(evictIdx + 1), entry];
+      });
+    };
+
+    const hit = getCachedByQuery(query);
+
     // --- Cache-hit path: fresh data → no API call ---
-    const hit = getCached(city);
     if (hit?.fresh) {
       setActiveWeather(hit.data);
-      const name = hit.data.location.name;
-      if (savedCities.includes(name)) {
-        setSavedWeather((prev) => ({ ...prev, [name]: hit.data }));
-      }
+      upsertCity(getLocationKey(hit.data.location), hit.data);
       return;
     }
 
     // --- SWR path: stale data → show immediately, refresh in background ---
     if (hit) {
       setActiveWeather(hit.data);
-      const cachedName = hit.data.location.name;
-      if (savedCities.includes(cachedName)) {
-        setSavedWeather((prev) => ({ ...prev, [cachedName]: hit.data }));
-      }
+      upsertCity(getLocationKey(hit.data.location), hit.data);
       // Silent background refresh (no loading spinner)
-      fetch(`/api/weather?city=${encodeURIComponent(city)}`)
+      fetch(`/api/weather?city=${encodeURIComponent(query)}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (!data) return;
-          const name = data.location.name;
-          setCache(name, data);
-          // Only update display if user is still viewing this city
+          const key = setCache(data, query);
           setActiveWeather((prev) =>
-            prev?.location?.name === name ? data : prev
+            prev && getLocationKey(prev.location) === key ? data : prev
           );
-          if (savedCities.includes(name)) {
-            setSavedWeather((prev) => ({ ...prev, [name]: data }));
-          }
+          upsertCity(key, data);
         })
         .catch(() => {});
       return;
@@ -184,16 +231,12 @@ export default function App() {
     // --- Miss path: no cache → fetch with loading spinner ---
     setLoading(true);
     try {
-      const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+      const res = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'City not found');
 
       setActiveWeather(data);
-      const name = data.location.name;
-      setCache(name, data);
-      if (savedCities.includes(name)) {
-        setSavedWeather((prev) => ({ ...prev, [name]: data }));
-      }
+      upsertCity(setCache(data, query), data);
     } catch (err) {
       setError(err.message);
       setActiveWeather(null);
@@ -202,31 +245,33 @@ export default function App() {
     }
   }
 
-  function handleSave() {
-    if (!activeWeather) return;
-    const name = activeWeather.location.name;
-    if (savedCities.includes(name) || savedCities.length >= 5) return;
-
-    setSavedCities((prev) => [...prev, name]);
-    setSavedWeather((prev) => ({ ...prev, [name]: activeWeather }));
-    setCache(name, activeWeather);
+  // Autocomplete selection — resolve by coordinates so same-named cities
+  // (e.g. multiple "Gopalpur"s) fetch the exact place the user picked.
+  function handleSelectPlace(place) {
+    handleSearch(`${place.lat},${place.lon}`);
   }
 
-  function handleRemove(city) {
-    setSavedCities((prev) => prev.filter((c) => c !== city));
+  function handleTogglePin(key) {
+    setSavedCities((prev) =>
+      prev.map((c) => (c.key === key ? { ...c, pinned: !c.pinned } : c))
+    );
+  }
+
+  function handleRemove(key) {
+    setSavedCities((prev) => prev.filter((c) => c.key !== key));
     setSavedWeather((prev) => {
       const next = { ...prev };
-      delete next[city];
+      delete next[key];
       return next;
     });
-    removeCache(city);
-    if (activeWeather?.location?.name === city) {
+    removeCache(key);
+    if (activeWeather && getLocationKey(activeWeather.location) === key) {
       setActiveWeather(null);
     }
   }
 
-  function handleSelectCity(city) {
-    const data = savedWeather[city];
+  function handleSelectCity(key) {
+    const data = savedWeather[key];
     if (data) {
       setActiveWeather(data);
       setError('');
@@ -262,16 +307,15 @@ export default function App() {
   async function handleRefresh() {
     if (!activeWeather || refreshing) return;
     setRefreshing(true);
-    const city = activeWeather.location.name;
+    const loc = activeWeather.location;
+    const query = `${loc.lat},${loc.lon}`;
     try {
-      const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+      const res = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setActiveWeather(data);
-      setCache(city, data);
-      if (savedCities.includes(city)) {
-        setSavedWeather((prev) => ({ ...prev, [city]: data }));
-      }
+      const key = setCache(data, query);
+      setSavedWeather((prev) => (key in prev ? { ...prev, [key]: data } : prev));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -312,15 +356,14 @@ export default function App() {
   }, [mood]);
 
   const activeCity = activeWeather?.location?.name;
-  const isSaved = activeCity ? savedCities.includes(activeCity) : false;
-  const canSave = savedCities.length < 5;
+  const activeKey = activeWeather ? getLocationKey(activeWeather.location) : null;
   const astro = activeWeather?.forecast?.forecastday?.[0]?.astro;
 
-  // Close detail overlays when city changes
+  // Close detail overlays when the active place changes
   useEffect(() => {
     setWindDetailOpen(false);
     setAQIDetailOpen(false);
-  }, [activeCity]);
+  }, [activeKey]);
 
   return (
     <div className="shell">
@@ -334,19 +377,42 @@ export default function App() {
           </svg>
           <span className="header-name">Nimbus</span>
         </div>
+
+        <SearchBar
+          onSearch={handleSearch}
+          onSelectPlace={handleSelectPlace}
+          loading={loading}
+          onUseLocation={handleGeolocation}
+          geoLoading={geoLoading}
+        />
+
         <div className="header-actions">
           {activeWeather && (
-            <button
-              className={`refresh-btn${refreshing ? ' spinning' : ''}`}
-              onClick={handleRefresh}
-              disabled={refreshing}
-              title="Refresh weather"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 4 23 10 17 10" />
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-              </svg>
-            </button>
+            <>
+              <button
+                className={`refresh-btn${refreshing ? ' spinning' : ''}`}
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh weather"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+              </button>
+              <button
+                className="share-btn"
+                onClick={handleShare}
+                disabled={sharing}
+                title="Share weather"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                  <polyline points="16 6 12 2 8 6" />
+                  <line x1="12" y1="2" x2="12" y2="15" />
+                </svg>
+              </button>
+            </>
           )}
           <button
             className="unit-toggle"
@@ -382,28 +448,20 @@ export default function App() {
       </header>
 
       <main className="main">
-        <SearchBar
-          onSearch={handleSearch}
-          loading={loading}
-          onUseLocation={handleGeolocation}
-          geoLoading={geoLoading}
-        />
-
         {error && <div className="error-message">{error}</div>}
 
         {activeWeather ? (
-          <div className="weather-content" key={activeCity}>
-            <CurrentWeather
-              data={activeWeather}
-              isSaved={isSaved}
-              canSave={canSave}
-              onToggleSave={isSaved ? () => handleRemove(activeCity) : handleSave}
-              onShare={handleShare}
-              sharing={sharing}
-              astro={astro}
-              tempUnit={tempUnit}
-            />
-            <FreshnessLabel city={activeCity} />
+          <div className="weather-content" key={activeKey}>
+            <CurrentWeather data={activeWeather} tempUnit={tempUnit} />
+            {astro && (
+              <SunriseSunset
+                astro={astro}
+                nextAstro={activeWeather.forecast?.forecastday?.[1]?.astro}
+                localtime={activeWeather.location.localtime}
+                isDay={activeWeather.current.is_day}
+              />
+            )}
+            <FreshnessLabel cacheKey={activeKey} />
             <WeatherDetails
               current={activeWeather.current}
               onWindClick={() => setWindDetailOpen(true)}
@@ -443,9 +501,10 @@ export default function App() {
         <Sidebar
           cities={savedCities}
           weatherData={savedWeather}
-          activeCity={activeCity}
+          activeKey={activeKey}
           onSelect={handleSelectCity}
           onRemove={handleRemove}
+          onTogglePin={handleTogglePin}
           tempUnit={tempUnit}
         />
       )}

@@ -10,7 +10,7 @@ function generateParticles(mood) {
   switch (mood) {
     // Warm amber circles rising — thermals / heat shimmer
     case 'clear':
-      return Array.from({ length: 14 }, (_, i) => {
+      return Array.from({ length: 10 }, (_, i) => {
         const size = `${rand(4, 10)}px`;
         return {
           type: 'orb',
@@ -28,7 +28,7 @@ function generateParticles(mood) {
 
     // Purple circles pulsing in place — twinkling stars
     case 'night':
-      return Array.from({ length: 30 }, (_, i) => {
+      return Array.from({ length: 18 }, (_, i) => {
         const size = `${rand(2, 5)}px`;
         return {
           type: 'star',
@@ -47,7 +47,7 @@ function generateParticles(mood) {
 
     // Slate circles drifting left→right — clouds in wind
     case 'cloudy':
-      return Array.from({ length: 22 }, (_, i) => {
+      return Array.from({ length: 14 }, (_, i) => {
         const size = `${rand(15, 70)}px`;
         return {
           type: 'cloud-circle',
@@ -66,7 +66,7 @@ function generateParticles(mood) {
 
     // Blue circles falling fast — raindrops catching light
     case 'rainy':
-      return Array.from({ length: 35 }, (_, i) => {
+      return Array.from({ length: 20 }, (_, i) => {
         const size = `${rand(3, 7)}px`;
         return {
           type: 'raindrop',
@@ -84,7 +84,7 @@ function generateParticles(mood) {
 
     // Ice-blue circles drifting down slowly — snowflakes
     case 'snowy':
-      return Array.from({ length: 25 }, (_, i) => {
+      return Array.from({ length: 16 }, (_, i) => {
         const size = `${rand(3, 8)}px`;
         return {
           type: 'snowflake',
@@ -102,7 +102,7 @@ function generateParticles(mood) {
 
     // Violet circles falling hard + lightning flash
     case 'stormy': {
-      const drops = Array.from({ length: 45 }, (_, i) => {
+      const drops = Array.from({ length: 26 }, (_, i) => {
         const size = `${rand(3, 6)}px`;
         return {
           type: 'storm-drop',

@@ -18,8 +18,8 @@ const MOOD_ACCENT = {
   stormy: '#c084fc',
 };
 
-const font = "'Space Grotesk', 'Inter', system-ui, sans-serif";
-const fontBody = "'Inter', system-ui, sans-serif";
+const font = "'Space Grotesk', 'Hanken Grotesk', system-ui, sans-serif";
+const fontBody = "'Hanken Grotesk', system-ui, sans-serif";
 
 function glass(opacity = 0.12) {
   return {

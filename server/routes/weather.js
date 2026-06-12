@@ -26,4 +26,7 @@ router.get('/api/weather', async (req, res) => {
   }
 });
 
+// City autocomplete moved to Open-Meteo geocoding (browser-direct, no proxy
+// needed — keyless + CORS open). See client/components/SearchBar.jsx.
+
 module.exports = router;
