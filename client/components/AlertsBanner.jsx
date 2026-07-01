@@ -26,9 +26,9 @@ function formatWhen(raw) {
 
 export default function AlertsBanner({ alerts }) {
   const [dismissed, setDismissed] = useState(false);
-  const [openIdx, setOpenIdx] = useState(0); // first alert expanded by default
+  const [openIdx, setOpenIdx] = useState(-1); // all collapsed by default
 
-  const list = alerts?.alert || [];
+  const list = alerts || [];
   if (list.length === 0 || dismissed) return null;
 
   // Most severe first so the banner leads with what matters
@@ -96,7 +96,7 @@ export default function AlertsBanner({ alerts }) {
                     <p className="alert-headline">{alert.headline}</p>
                   )}
                   {window && <p className="alert-window">{window}</p>}
-                  {alert.desc && <p className="alert-desc">{alert.desc.trim()}</p>}
+                  {alert.description && <p className="alert-desc">{alert.description.trim()}</p>}
                   {alert.instruction && (
                     <p className="alert-instruction">{alert.instruction.trim()}</p>
                   )}

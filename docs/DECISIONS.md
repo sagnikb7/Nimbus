@@ -5,6 +5,52 @@ Keep entries short; link to code/`CLAUDE.md` for detail.
 
 ---
 
+## 2026-07-01 — Provider selection moved client-side + per-provider capability descriptors
+
+- **Context:** The provider was fixed server-side (`WEATHER_PROVIDER` env) with a single generic
+  `WEATHER_API_KEY`. We want the client to swap providers at runtime (future selector) and each
+  provider to declare its own requirements so the app/tests can tell which are usable.
+- **Decision:** Each adapter exports a `meta` descriptor (`{id,label,keyRequired,keyEnvVar,...}`) that
+  stores the key's **env-var name, never the value**. The registry derives `DEFAULT_PROVIDER`
+  (`open-meteo`), `resolveKey`, `isAvailable`, and `listProviders` from it. Provider is now **client
+  input**: stored in `localStorage` (default open-meteo), sent as `?provider=`, validated server-side
+  (unknown → 400; key-required-but-unconfigured → 400). `GET /api/providers` exposes the capability
+  list (`{id,label,keyRequired,available}` — no keys) for the future selector; the client self-heals a
+  stale/unavailable choice against it. WeatherAPI key renamed `WEATHER_API_KEY` → `WEATHERAPI_KEY`
+  (legacy read as fallback). `WEATHER_PROVIDER` env removed; `server/config.js` now only exports `port`.
+- **Rationale:** Self-describing providers make the selector, the "which providers work here" startup
+  log, and the test matrix fall out for free. Keeping keys as env-var *names* (resolved at runtime)
+  keeps secrets out of any serialized/logged structure and out of the client payload. Treating the
+  query param as untrusted input is basic hardening.
+- **Deferred:** the settings selector UI; and cache-keying by provider (values differ per provider —
+  `weatherCache.js` keys by location only today, fine while one default is used).
+- **Status:** ✅ Done (backend + client plumbing + tests). Selector UI pending.
+
+## 2026-07-01 — Multi-vendor weather via a server-side adapter + neutral schema
+
+- **Context:** The app was hardwired to WeatherAPI.com — the route returned its raw JSON and the
+  entire frontend (~15 files) read that vendor's shape directly. We wanted to swap providers
+  (starting with keyless Open-Meteo) and add more later (AccuWeather, etc.) without rewriting the
+  UI each time.
+- **Decision:** Add `WEATHER_PROVIDER` (`server/config.js`, `.env.example`) selecting a
+  server-side **adapter** (`server/adapters/{weatherapi,open-meteo}.js`, registry `index.js`,
+  helpers `_shared/`). Every adapter returns one **fresh vendor-neutral schema** (contract in
+  `adapters/README.md`) — renamed keys (`current_weather`-style: `temp.{c,f}`, `feels_like`,
+  `wind.{speed_kph,dir,degree,gust_kph}`, `daily[]`, `alerts[]`, `condition.id`, `epa_index`).
+  The frontend was rewritten to consume the neutral keys. Chose a **fresh** schema over
+  "reuse WeatherAPI's shape" deliberately (user call) — more frontend churn now, but no vendor's
+  naming leaks into the UI. `condition.id` is seeded from WeatherAPI's code numbers so the
+  Meteocons icon/mood tables (`weatherIcon.js`/`weatherMood.js`) work unchanged; other vendors
+  translate into it. Both Express and Netlify import the **same** CommonJS registry (Node global
+  `fetch`, no build step), retiring the hand-mirror rule.
+- **Rationale:** An anti-corruption layer keeps the UI provider-agnostic; adding a vendor =
+  one new adapter file. Open-Meteo gaps are absorbed in its adapter (WMO→id, deg→compass,
+  ISO→"h:mm AM", us_aqi→EPA 1–6, `alerts:[]`, BigDataCloud reverse-geocoding for `lat,lon`
+  names, `icon_url:""` → ShareCard falls back to bundled Meteocons). Geocoding autocomplete
+  stays client-direct Open-Meteo (unchanged).
+- **Status:** ✅ Done. Verified both providers through the live Express route (name + `lat,lon`
+  queries) and a production build.
+
 ## 2026-06-13 — Knowledge base reorg: one tracker, many knowledge files
 
 - **Context:** Tracking was spread across three files (`ROADMAP.md` backlog, `docs/STATUS.md`

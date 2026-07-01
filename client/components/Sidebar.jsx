@@ -1,6 +1,4 @@
 export default function Sidebar({ cities, weatherData, activeKey, onSelect, onRemove, onTogglePin, tempUnit }) {
-  const u = tempUnit === 'c' ? 'temp_c' : 'temp_f';
-
   // Show a region qualifier only when two saved cities share the same name
   const nameCounts = cities.reduce((acc, c) => {
     acc[c.name] = (acc[c.name] || 0) + 1;
@@ -12,7 +10,7 @@ export default function Sidebar({ cities, weatherData, activeKey, onSelect, onRe
       <div className="dock-track">
         {cities.map((city) => {
           const w = weatherData[city.key];
-          const temp = w ? Math.round(w.current[u]) : null;
+          const temp = w ? Math.round(w.current.temp[tempUnit]) : null;
           const isActive = activeKey != null && activeKey === city.key;
           const qualifier =
             nameCounts[city.name] > 1 ? city.region || city.country : null;

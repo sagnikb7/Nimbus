@@ -70,17 +70,17 @@ const EDU_BLOCKS = [
 export default function WindDetail({ current, forecastDays, localtime, onClose }) {
   const [eduOpen, setEduOpen] = useState(false);
 
-  const category = getWindCategory(current.wind_kph);
+  const category = getWindCategory(current.wind.speed_kph);
   const hourlyWind = getHourlyWind(forecastDays, localtime);
   const summary = getWindSummary(current, forecastDays, localtime);
-  const gustInfo = getGustAssessment(current.wind_kph, current.gust_kph);
+  const gustInfo = getGustAssessment(current.wind.speed_kph, current.wind.gust_kph);
   const peakHour = getPeakWindHour(forecastDays);
   const prevailingDir = getPrevailingDirection(forecastDays);
-  const todayMax = forecastDays?.[0]?.day?.maxwind_kph;
-  const gustDelta = Math.round((current.gust_kph || 0) - (current.wind_kph || 0));
+  const todayMax = forecastDays?.[0]?.max_wind_kph;
+  const gustDelta = Math.round((current.wind.gust_kph || 0) - (current.wind.speed_kph || 0));
 
-  const animSpeed = useAnimatedNumber(Math.round(current.wind_kph));
-  const animGust = useAnimatedNumber(Math.round(current.gust_kph || 0));
+  const animSpeed = useAnimatedNumber(Math.round(current.wind.speed_kph));
+  const animGust = useAnimatedNumber(Math.round(current.wind.gust_kph || 0));
 
   // Lock body scroll
   useEffect(() => {
@@ -122,10 +122,10 @@ export default function WindDetail({ current, forecastDays, localtime, onClose }
             <span className="wind-hero-unit">km/h</span>
           </div>
           <div className="wind-hero-meta">
-            <span className="wind-hero-dir-badge">{current.wind_dir}</span>
-            <span className="wind-hero-deg">{current.wind_degree}&deg;</span>
+            <span className="wind-hero-dir-badge">{current.wind.dir}</span>
+            <span className="wind-hero-deg">{current.wind.degree}&deg;</span>
           </div>
-          <CompassArrow degree={current.wind_degree} />
+          <CompassArrow degree={current.wind.degree} />
           <span className="wind-hero-category">{category.label}</span>
           <span className="wind-hero-desc">{category.description}</span>
         </div>
@@ -181,13 +181,13 @@ export default function WindDetail({ current, forecastDays, localtime, onClose }
                 return (
                   <div className={`wind-hourly-item${isNow ? ' now' : ''}`} key={h.time_epoch}>
                     <span className="wind-hourly-time">{isNow ? 'Now' : formatHour(h.time)}</span>
-                    <svg className="wind-hourly-arrow" viewBox="0 0 24 24" style={{ transform: `rotate(${h.wind_degree}deg)` }}>
+                    <svg className="wind-hourly-arrow" viewBox="0 0 24 24" style={{ transform: `rotate(${h.wind.degree}deg)` }}>
                       <line x1="12" y1="4" x2="12" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                       <polygon points="12,2 8,10 16,10" fill="currentColor" />
                     </svg>
-                    <span className="wind-hourly-speed">{Math.round(h.wind_kph)}</span>
-                    <span className="wind-hourly-gust">{Math.round(h.gust_kph)}</span>
-                    <span className="wind-hourly-dir">{h.wind_dir}</span>
+                    <span className="wind-hourly-speed">{Math.round(h.wind.speed_kph)}</span>
+                    <span className="wind-hourly-gust">{Math.round(h.wind.gust_kph)}</span>
+                    <span className="wind-hourly-dir">{h.wind.dir}</span>
                   </div>
                 );
               })}

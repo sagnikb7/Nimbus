@@ -1,12 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="sky" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#667eea"/>
-      <stop offset="100%" stop-color="#764ba2"/>
+    <linearGradient id="sky" x1="6%" y1="0%" x2="94%" y2="100%">
+      <stop offset="0%" stop-color="#5580f3"/>
+      <stop offset="52%" stop-color="#6060cf"/>
+      <stop offset="100%" stop-color="#6a47bb"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="108" fill="url(#sky)"/>
-  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"
-        transform="translate(76 100) scale(16)"
-        fill="white" opacity="0.95"/>
+  <rect width="512" height="512" rx="116" fill="url(#sky)"/>
+  <!-- Fluffy cumulus cloud (lobes + rounded base); shape mirrors the header logo -->
+  <g transform="translate(38 69) scale(18)" fill="#f7f8ff">
+    <circle cx="10.2" cy="9.8" r="4.8"/>
+    <circle cx="15.2" cy="10.8" r="3.6"/>
+    <circle cx="6.6" cy="12.8" r="3.6"/>
+    <circle cx="18.2" cy="13.6" r="3.1"/>
+    <rect x="6.2" y="11.2" width="12.4" height="5.6" rx="2.8"/>
+  </g>
 </svg>

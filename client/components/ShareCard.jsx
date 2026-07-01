@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { getWeatherIcon } from '../utils/weatherIcon';
 
 const MOOD_GRADIENTS = {
   clear: 'linear-gradient(165deg, #f59e0b 0%, #ef4444 40%, #8b5cf6 100%)',
@@ -30,7 +31,7 @@ function glass(opacity = 0.12) {
 }
 
 const ShareCard = forwardRef(function ShareCard({ data, tempUnit, mood }, ref) {
-  const { location, current, forecast } = data;
+  const { location, current, daily } = data;
   const isLight = mood === 'snowy';
   const color = isLight ? '#0f172a' : '#ffffff';
   const muted = isLight ? 'rgba(15, 23, 42, 0.5)' : 'rgba(255, 255, 255, 0.5)';
@@ -38,11 +39,12 @@ const ShareCard = forwardRef(function ShareCard({ data, tempUnit, mood }, ref) {
   const accent = MOOD_ACCENT[mood] || MOOD_ACCENT.clear;
   const bg = MOOD_GRADIENTS[mood] || MOOD_GRADIENTS.clear;
 
-  const temp = Math.round(current[tempUnit === 'c' ? 'temp_c' : 'temp_f']);
-  const feelsLike = Math.round(current[tempUnit === 'c' ? 'feelslike_c' : 'feelslike_f']);
+  const temp = Math.round(current.temp[tempUnit]);
+  const feelsLike = Math.round(current.feels_like[tempUnit]);
   const unit = `°${tempUnit.toUpperCase()}`;
-  const icon = current.condition.icon;
-  const iconUrl = icon.startsWith('//') ? `https:${icon}` : icon;
+  // Prefer the vendor's raster icon (proven in html2canvas); fall back to the
+  // bundled Meteocon when the provider supplies none (e.g. Open-Meteo).
+  const iconUrl = current.condition.icon_url || getWeatherIcon(current.condition.id, current.is_day);
 
   const date = new Date(location.localtime);
   const formattedDate = date.toLocaleDateString('en-US', {
@@ -56,11 +58,11 @@ const ShareCard = forwardRef(function ShareCard({ data, tempUnit, mood }, ref) {
     hour12: true,
   });
 
-  const days = forecast?.forecastday?.slice(0, 3) || [];
+  const days = daily?.slice(0, 3) || [];
 
   const detailPills = [
     { label: 'Feels like', value: `${feelsLike}${unit}` },
-    { label: 'Wind', value: `${Math.round(current.wind_kph)} km/h` },
+    { label: 'Wind', value: `${Math.round(current.wind.speed_kph)} km/h` },
     { label: 'Humidity', value: `${current.humidity}%` },
   ];
 
@@ -116,20 +118,12 @@ const ShareCard = forwardRef(function ShareCard({ data, tempUnit, mood }, ref) {
             alignItems: 'center',
             gap: 8,
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"
-                stroke={color}
-                strokeWidth="1.7"
-                fill={color}
-                opacity="0.2"
-              />
-              <path
-                d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"
-                stroke={color}
-                strokeWidth="1.7"
-                fill="none"
-              />
+            <svg width="20" height="16" viewBox="2 4 20 15" fill={color}>
+              <circle cx="10.2" cy="9.8" r="4.8" />
+              <circle cx="15.2" cy="10.8" r="3.6" />
+              <circle cx="6.6" cy="12.8" r="3.6" />
+              <circle cx="18.2" cy="13.6" r="3.1" />
+              <rect x="6.2" y="11.2" width="12.4" height="5.6" rx="2.8" />
             </svg>
             <span style={{
               fontSize: 15,
@@ -289,10 +283,9 @@ const ShareCard = forwardRef(function ShareCard({ data, tempUnit, mood }, ref) {
                 const dayName = i === 0
                   ? 'Today'
                   : d.toLocaleDateString('en-US', { weekday: 'short' });
-                const hi = Math.round(day.day[tempUnit === 'c' ? 'maxtemp_c' : 'maxtemp_f']);
-                const lo = Math.round(day.day[tempUnit === 'c' ? 'mintemp_c' : 'mintemp_f']);
-                const dayIcon = day.day.condition.icon;
-                const dayIconUrl = dayIcon.startsWith('//') ? `https:${dayIcon}` : dayIcon;
+                const hi = Math.round(day.high[tempUnit]);
+                const lo = Math.round(day.low[tempUnit]);
+                const dayIconUrl = day.condition.icon_url || getWeatherIcon(day.condition.id, 1);
 
                 return (
                   <div key={day.date} style={{
@@ -350,13 +343,12 @@ const ShareCard = forwardRef(function ShareCard({ data, tempUnit, mood }, ref) {
             gap: 8,
             borderRadius: 100,
           }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"
-                stroke={muted}
-                strokeWidth="2"
-                fill="none"
-              />
+            <svg width="15" height="12" viewBox="2 4 20 15" fill={muted}>
+              <circle cx="10.2" cy="9.8" r="4.8" />
+              <circle cx="15.2" cy="10.8" r="3.6" />
+              <circle cx="6.6" cy="12.8" r="3.6" />
+              <circle cx="18.2" cy="13.6" r="3.1" />
+              <rect x="6.2" y="11.2" width="12.4" height="5.6" rx="2.8" />
             </svg>
             <span style={{
               fontSize: 13,

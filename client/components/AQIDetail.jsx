@@ -38,7 +38,7 @@ export default function AQIDetail({ airQuality, onClose }) {
   const [eduOpen, setEduOpen] = useState(false);
 
   const result = calculateAQI(airQuality);
-  const epa = airQuality['us-epa-index'];
+  const epa = airQuality.epa_index;
   const numericAqi = result?.aqi ?? null;
   const level = numericAqi != null ? getAQILevel(numericAqi) : getAQILevelFromEpa(epa);
   const primary = getPrimaryPollutant(airQuality);

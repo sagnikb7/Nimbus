@@ -48,7 +48,7 @@ export function getPrevailingDirection(forecastDays) {
 
   const counts = {};
   for (const h of today.hour) {
-    const dir = h.wind_dir;
+    const dir = h.wind.dir;
     counts[dir] = (counts[dir] || 0) + 1;
   }
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
@@ -64,10 +64,10 @@ export function getWindTrend(forecastDays, localtime) {
     for (const h of day.hour || []) {
       const diffH = (new Date(h.time) - now) / (1000 * 60 * 60);
       if (diffH >= -6 && diffH < 0) {
-        pastSum += h.wind_kph;
+        pastSum += h.wind.speed_kph;
         pastCount++;
       } else if (diffH >= 0 && diffH <= 6) {
-        futureSum += h.wind_kph;
+        futureSum += h.wind.speed_kph;
         futureCount++;
       }
     }
@@ -96,7 +96,7 @@ export function getPeakWindHour(forecastDays) {
 
   let peak = today.hour[0];
   for (const h of today.hour) {
-    if (h.wind_kph > peak.wind_kph) peak = h;
+    if (h.wind.speed_kph > peak.wind.speed_kph) peak = h;
   }
   return peak;
 }
@@ -112,21 +112,21 @@ function formatHour(timeStr) {
 
 // Generates a 2-3 sentence plain-language wind summary
 export function getWindSummary(current, forecastDays, localtime) {
-  const cat = getWindCategory(current.wind_kph);
+  const cat = getWindCategory(current.wind.speed_kph);
   const trend = getWindTrend(forecastDays, localtime);
-  const gust = getGustAssessment(current.wind_kph, current.gust_kph);
+  const gust = getGustAssessment(current.wind.speed_kph, current.wind.gust_kph);
   const peak = getPeakWindHour(forecastDays);
 
   const sentences = [];
 
   // Current conditions
   sentences.push(
-    `Wind is currently ${cat.label.toLowerCase()} at ${Math.round(current.wind_kph)} km/h from the ${current.wind_dir}. ${cat.description}.`
+    `Wind is currently ${cat.label.toLowerCase()} at ${Math.round(current.wind.speed_kph)} km/h from the ${current.wind.dir}. ${cat.description}.`
   );
 
   // Gust note (only if notable)
   if (gust.severity !== 'minimal') {
-    sentences.push(`${gust.description}, with gusts up to ${Math.round(current.gust_kph)} km/h.`);
+    sentences.push(`${gust.description}, with gusts up to ${Math.round(current.wind.gust_kph)} km/h.`);
   }
 
   // Trend

@@ -6,3 +6,8 @@
   from = "/api/weather"
   to = "/.netlify/functions/weather"
   status = 200
+
+[[redirects]]
+  from = "/api/providers"
+  to = "/.netlify/functions/providers"
+  status = 200

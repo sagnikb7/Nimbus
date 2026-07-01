@@ -1,26 +1,32 @@
+// Netlify serverless equivalent of the Express /api/weather route. Shares the
+// exact same adapter registry (server/adapters) so vendor logic is never
+// duplicated. Provider is chosen by the client via ?provider= (default
+// open-meteo); each provider resolves its own key from env via its descriptor.
+const { getAdapter, resolveKey, isAvailable, DEFAULT_PROVIDER } = require('../../server/adapters');
+
+const json = (statusCode, body) => ({ statusCode, body: JSON.stringify(body) });
+
 exports.handler = async (event) => {
   const city = event.queryStringParameters?.city;
+  const provider = event.queryStringParameters?.provider || DEFAULT_PROVIDER;
 
-  if (!city) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'City query parameter is required' }) };
+  if (!city) return json(400, { error: 'City query parameter is required' });
+
+  let adapter;
+  try {
+    adapter = getAdapter(provider);
+  } catch {
+    return json(400, { error: `Unknown weather provider: ${provider}` });
   }
-
-  const weatherApiKey = process.env.WEATHER_API_KEY;
-  if (!weatherApiKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Weather API key is not configured' }) };
+  if (!isAvailable(provider)) {
+    return json(400, { error: `Weather provider "${provider}" is not configured (missing API key)` });
   }
 
   try {
-    const url = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&q=${encodeURIComponent(city)}&days=3&aqi=yes&alerts=yes`;
-    const response = await fetch(url);
-    const data = await response.json();
-
-    if (!response.ok) {
-      return { statusCode: response.status, body: JSON.stringify({ error: data.error?.message || 'Failed to fetch weather data' }) };
-    }
-
-    return { statusCode: 200, body: JSON.stringify(data) };
+    const data = await adapter.fetchWeather(city, { apiKey: resolveKey(provider) });
+    data.provider = provider; // stamp source so the client never mixes providers
+    return json(200, data);
   } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Failed to fetch weather data' }) };
+    return json(err.status || 500, { error: err.message || 'Failed to fetch weather data' });
   }
 };

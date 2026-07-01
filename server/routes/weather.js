@@ -1,32 +1,42 @@
 const express = require('express');
-const axios = require('axios');
-const { weatherApiKey } = require('../config');
+const { getAdapter, resolveKey, isAvailable, listProviders, DEFAULT_PROVIDER } = require('../adapters');
 
 const router = express.Router();
 
 router.get('/api/weather', async (req, res) => {
   const city = req.query.city;
+  const provider = req.query.provider || DEFAULT_PROVIDER;
 
   if (!city) {
     return res.status(400).json({ error: 'City query parameter is required' });
   }
 
-  if (!weatherApiKey) {
-    return res.status(500).json({ error: 'Weather API key is not configured' });
+  // Provider is client input — validate against the registry before trusting it.
+  let adapter;
+  try {
+    adapter = getAdapter(provider);
+  } catch {
+    return res.status(400).json({ error: `Unknown weather provider: ${provider}` });
+  }
+  if (!isAvailable(provider)) {
+    return res.status(400).json({ error: `Weather provider "${provider}" is not configured (missing API key)` });
   }
 
   try {
-    const url = `https://api.weatherapi.com/v1/forecast.json?key=${weatherApiKey}&q=${encodeURIComponent(city)}&days=3&aqi=yes&alerts=yes`;
-    const response = await axios.get(url);
-    res.json(response.data);
+    const data = await adapter.fetchWeather(city, { apiKey: resolveKey(provider) });
+    data.provider = provider; // stamp source so the client never mixes providers
+    res.json(data);
   } catch (err) {
-    const status = err.response?.status || 500;
-    const message = err.response?.data?.error?.message || 'Failed to fetch weather data';
-    res.status(status).json({ error: message });
+    res.status(err.status || 500).json({ error: err.message || 'Failed to fetch weather data' });
   }
 });
 
-// City autocomplete moved to Open-Meteo geocoding (browser-direct, no proxy
-// needed — keyless + CORS open). See client/components/SearchBar.jsx.
+// Capability list for the client (which providers exist + are usable). No keys.
+router.get('/api/providers', (req, res) => {
+  res.json(listProviders());
+});
+
+// City autocomplete is browser-direct to Open-Meteo geocoding (keyless + CORS
+// open — no proxy). See client/components/SearchBar.jsx.
 
 module.exports = router;

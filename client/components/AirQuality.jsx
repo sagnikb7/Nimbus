@@ -3,7 +3,7 @@ import { getAQILevel } from '../utils/aqiUtils';
 export default function AirQuality({ airQuality }) {
   if (!airQuality) return null;
 
-  const epa = airQuality['us-epa-index'];
+  const epa = airQuality.epa_index;
   const level = getAQILevel(epa);
 
   const pollutants = [

@@ -2,7 +2,6 @@ import { getWeatherIcon } from '../utils/weatherIcon';
 
 export default function HourlyForecast({ forecastDays, localtime, tempUnit }) {
   const now = new Date(localtime);
-  const u = tempUnit === 'c' ? 'temp_c' : 'temp_f';
 
   const hours = [];
   for (const day of forecastDays) {
@@ -36,13 +35,13 @@ export default function HourlyForecast({ forecastDays, localtime, tempUnit }) {
                   ? '12 PM'
                   : `${hHour - 12} PM`;
 
-          const iconUrl = getWeatherIcon(h.condition.code, h.is_day);
+          const iconUrl = getWeatherIcon(h.condition.id, h.is_day);
 
           return (
             <div className={`hourly-item${isNow ? ' now' : ''}`} key={h.time_epoch}>
               <span className="hourly-time">{label}</span>
               <img className="hourly-icon" src={iconUrl} alt={h.condition.text} />
-              <span className="hourly-temp">{Math.round(h[u])}&deg;</span>
+              <span className="hourly-temp">{Math.round(h.temp[tempUnit])}&deg;</span>
             </div>
           );
         })}

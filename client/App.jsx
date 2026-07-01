@@ -11,12 +11,13 @@ import HourlyForecast from './components/HourlyForecast';
 import WeatherParticles from './components/WeatherParticles';
 import ShareCard from './components/ShareCard';
 import WindDetail from './components/WindDetail';
+import SettingsPanel from './components/SettingsPanel';
 import { getWeatherMood } from './utils/weatherMood';
 import { captureShareCard, shareOrDownload } from './utils/shareUtils';
 import { getCached, getCachedByQuery, setCache, removeCache, partitionCities, getLocationKey } from './utils/weatherCache';
 import './App.css';
 
-function FreshnessLabel({ cacheKey }) {
+function FreshnessLabel({ cacheKey, providerId, providerLabel }) {
   const [, tick] = useState(0);
 
   // Re-render every 60s to keep the relative time current
@@ -26,7 +27,7 @@ function FreshnessLabel({ cacheKey }) {
   }, []);
 
   if (!cacheKey) return null;
-  const hit = getCached(cacheKey);
+  const hit = getCached(cacheKey, providerId);
   if (!hit) return null;
 
   const secs = Math.floor((Date.now() - hit.ts) / 1000);
@@ -41,7 +42,11 @@ function FreshnessLabel({ cacheKey }) {
     }
   }
 
-  return <span className="freshness-label">Updated {text}</span>;
+  return (
+    <span className="freshness-label">
+      Updated {text}{providerLabel ? ` · ${providerLabel}` : ''}
+    </span>
+  );
 }
 
 export default function App() {
@@ -70,34 +75,69 @@ export default function App() {
   const [sharing, setSharing] = useState(false);
   const [windDetailOpen, setWindDetailOpen] = useState(false);
   const [aqiDetailOpen, setAQIDetailOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const shareCardRef = useRef(null);
 
   const [tempUnit, setTempUnit] = useState(() => {
     return localStorage.getItem('tempUnit') || 'c';
   });
 
-  const [theme, setTheme] = useState(() => {
-    const stored = localStorage.getItem('theme');
-    if (stored) return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  // Weather data provider — a client setting (default open-meteo), sent to the
+  // backend per request. A settings selector to change it lands later; for now
+  // it's driven by localStorage and self-heals against /api/providers below.
+  const [weatherProvider, setWeatherProvider] = useState(() => {
+    return localStorage.getItem('weatherProvider') || 'open-meteo';
   });
+  const [providers, setProviders] = useState([]);
+  const [providerSwitching, setProviderSwitching] = useState(false);
+
+  // Theme preference (light | dark | system) vs the resolved value applied to
+  // <html data-theme>. "system" follows the OS and updates live.
+  const [themePref, setThemePref] = useState(() => localStorage.getItem('theme') || 'system');
+  const [systemTheme, setSystemTheme] = useState(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  );
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => setSystemTheme(mq.matches ? 'dark' : 'light');
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
-  function toggleTheme() {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-  }
+  const resolvedTheme = themePref === 'system' ? systemTheme : themePref;
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', resolvedTheme);
+    localStorage.setItem('theme', themePref);
+  }, [resolvedTheme, themePref]);
 
   useEffect(() => {
     localStorage.setItem('tempUnit', tempUnit);
   }, [tempUnit]);
 
-  function toggleTempUnit() {
-    setTempUnit((prev) => (prev === 'c' ? 'f' : 'c'));
-  }
+  useEffect(() => {
+    localStorage.setItem('weatherProvider', weatherProvider);
+  }, [weatherProvider]);
+
+  // Provider capability list (for the Settings selector) + self-heal: if the
+  // stored provider isn't available (e.g. its key was removed), fall back to the
+  // keyless default so requests don't 400.
+  useEffect(() => {
+    fetch('/api/providers')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((list) => {
+        if (!list) return;
+        setProviders(list);
+        const ok = list.some((p) => p.id === weatherProvider && p.available);
+        if (!ok) setWeatherProvider('open-meteo');
+      })
+      .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Build a /api/weather URL carrying the active provider.
+  const weatherUrl = (query) =>
+    `/api/weather?city=${encodeURIComponent(query)}&provider=${encodeURIComponent(weatherProvider)}`;
 
   // Persist to localStorage
   useEffect(() => {
@@ -108,7 +148,7 @@ export default function App() {
   useEffect(() => {
     if (savedCities.length === 0) return;
 
-    const { cached, toFetch } = partitionCities(savedCities);
+    const { cached, toFetch } = partitionCities(savedCities, weatherProvider);
 
     // Show all cached data immediately (fresh stays as-is, stale gets SWR below)
     if (Object.keys(cached).length > 0) {
@@ -123,7 +163,7 @@ export default function App() {
     // Background-fetch stale + missing cities (and unresolved legacy entries)
     Promise.all(
       toFetch.map((c) =>
-        fetch(`/api/weather?city=${encodeURIComponent(c.query)}`)
+        fetch(weatherUrl(c.query))
           .then((r) => (r.ok ? r.json() : null))
           .catch(() => null)
       )
@@ -201,7 +241,7 @@ export default function App() {
       });
     };
 
-    const hit = getCachedByQuery(query);
+    const hit = getCachedByQuery(query, weatherProvider);
 
     // --- Cache-hit path: fresh data → no API call ---
     if (hit?.fresh) {
@@ -215,7 +255,7 @@ export default function App() {
       setActiveWeather(hit.data);
       upsertCity(getLocationKey(hit.data.location), hit.data);
       // Silent background refresh (no loading spinner)
-      fetch(`/api/weather?city=${encodeURIComponent(query)}`)
+      fetch(weatherUrl(query))
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (!data) return;
@@ -232,7 +272,7 @@ export default function App() {
     // --- Miss path: no cache → fetch with loading spinner ---
     setLoading(true);
     try {
-      const res = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
+      const res = await fetch(weatherUrl(query));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'City not found');
 
@@ -311,7 +351,7 @@ export default function App() {
     const loc = activeWeather.location;
     const query = `${loc.lat},${loc.lon}`;
     try {
-      const res = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
+      const res = await fetch(weatherUrl(query));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setActiveWeather(data);
@@ -321,6 +361,58 @@ export default function App() {
       setError(err.message);
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  // Switch the data provider and re-pull every saved city from the new source in
+  // the background. A location's identity (name|region|country) can differ
+  // between providers, so we MIGRATE each saved city's key to the new provider's
+  // key — otherwise savedWeather/activeWeather would look up under a stale key
+  // and keep showing the old provider's data (e.g. 3-day vs 7-day forecast).
+  async function handleProviderChange(next) {
+    if (next === weatherProvider || providerSwitching) return;
+    setWeatherProvider(next);
+    const cities = savedCities;
+    if (cities.length === 0) return;
+
+    const prevActiveKey = activeWeather ? getLocationKey(activeWeather.location) : null;
+    setProviderSwitching(true);
+    try {
+      const results = await Promise.all(
+        cities.map((c) =>
+          fetch(`/api/weather?city=${encodeURIComponent(c.query)}&provider=${next}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null)
+        )
+      );
+
+      const newWeather = {};
+      const remap = new Map(); // oldKey → { newKey, data }
+      results.forEach((data, i) => {
+        if (!data) return;
+        const c = cities[i];
+        const newKey = setCache(data, c.query); // getLocationKey(data.location)
+        newWeather[newKey] = data;
+        remap.set(c.key, { newKey, data });
+        if (c.key && c.key !== newKey) removeCache(c.key); // prune stale entry
+      });
+      if (remap.size === 0) return;
+
+      // Re-point saved cities at their new-provider keys
+      setSavedCities((prev) =>
+        prev.map((c) => {
+          const r = remap.get(c.key);
+          return r && r.newKey !== c.key ? { ...c, key: r.newKey } : c;
+        })
+      );
+      // Replace (not merge) so no city keeps the previous provider's data — any
+      // that failed to refetch drop to "…" and get re-pulled later.
+      setSavedWeather(newWeather);
+
+      const activeRemap = prevActiveKey && remap.get(prevActiveKey);
+      setActiveWeather(activeRemap ? activeRemap.data : null);
+    } finally {
+      setProviderSwitching(false);
     }
   }
 
@@ -343,7 +435,7 @@ export default function App() {
   const mood = useMemo(() => {
     if (!activeWeather) return null;
     return getWeatherMood(
-      activeWeather.current.condition.code,
+      activeWeather.current.condition.id,
       activeWeather.current.is_day
     );
   }, [activeWeather]);
@@ -358,7 +450,12 @@ export default function App() {
 
   const activeCity = activeWeather?.location?.name;
   const activeKey = activeWeather ? getLocationKey(activeWeather.location) : null;
-  const astro = activeWeather?.forecast?.forecastday?.[0]?.astro;
+  const providerLabel = providers.find((p) => p.id === weatherProvider)?.label || weatherProvider;
+  // Label the freshness line by the DATA's actual source (stamped server-side),
+  // not the selected setting — so it never mislabels during a switch.
+  const activeProviderLabel =
+    providers.find((p) => p.id === activeWeather?.provider)?.label || activeWeather?.provider || providerLabel;
+  const astro = activeWeather?.daily?.[0]?.astro;
 
   // Close detail overlays when the active place changes
   useEffect(() => {
@@ -372,9 +469,12 @@ export default function App() {
 
       <header className="header">
         <div className="header-brand">
-          <svg className="header-logo" viewBox="0 0 24 24" fill="none" strokeLinejoin="round" strokeLinecap="round">
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" stroke="currentColor" strokeWidth="1.7" fill="currentColor" opacity="0.15"/>
-            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" stroke="currentColor" strokeWidth="1.7" fill="none"/>
+          <svg className="header-logo" viewBox="2 4 20 15" fill="currentColor">
+            <circle cx="10.2" cy="9.8" r="4.8" />
+            <circle cx="15.2" cy="10.8" r="3.6" />
+            <circle cx="6.6" cy="12.8" r="3.6" />
+            <circle cx="18.2" cy="13.6" r="3.1" />
+            <rect x="6.2" y="11.2" width="12.4" height="5.6" rx="2.8" />
           </svg>
           <span className="header-name">Nimbus</span>
         </div>
@@ -416,34 +516,15 @@ export default function App() {
             </>
           )}
           <button
-            className="unit-toggle"
-            onClick={toggleTempUnit}
-            title={`Switch to °${tempUnit === 'c' ? 'F' : 'C'}`}
+            className="settings-btn"
+            onClick={() => setSettingsOpen(true)}
+            title="Settings"
+            aria-label="Settings"
           >
-            °{tempUnit.toUpperCase()}
-          </button>
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            )}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
           </button>
         </div>
       </header>
@@ -454,31 +535,40 @@ export default function App() {
         {activeWeather ? (
           <div className="weather-content" key={activeKey}>
             <AlertsBanner alerts={activeWeather.alerts} />
-            <CurrentWeather data={activeWeather} tempUnit={tempUnit} />
+            <CurrentWeather
+              data={activeWeather}
+              tempUnit={tempUnit}
+              freshness={
+                <FreshnessLabel
+                  cacheKey={activeKey}
+                  providerId={activeWeather.provider}
+                  providerLabel={activeProviderLabel}
+                />
+              }
+            />
             {astro && (
               <SunriseSunset
                 astro={astro}
-                nextAstro={activeWeather.forecast?.forecastday?.[1]?.astro}
+                nextAstro={activeWeather.daily?.[1]?.astro}
                 localtime={activeWeather.location.localtime}
                 isDay={activeWeather.current.is_day}
               />
             )}
-            <FreshnessLabel cacheKey={activeKey} />
             <WeatherDetails
               current={activeWeather.current}
               onWindClick={() => setWindDetailOpen(true)}
               onAQIClick={() => setAQIDetailOpen(true)}
             />
-            {activeWeather.forecast && (
+            {activeWeather.daily?.length > 0 && (
               <HourlyForecast
-                forecastDays={activeWeather.forecast.forecastday}
+                forecastDays={activeWeather.daily}
                 localtime={activeWeather.location.localtime}
                 tempUnit={tempUnit}
               />
             )}
-            {activeWeather.forecast && (
+            {activeWeather.daily?.length > 0 && (
               <Forecast
-                days={activeWeather.forecast.forecastday}
+                days={activeWeather.daily}
                 tempUnit={tempUnit}
               />
             )}
@@ -487,9 +577,12 @@ export default function App() {
           !error && (
             <div className="empty-state">
               <div className="empty-icon">
-                <svg viewBox="0 0 24 24" fill="none" strokeLinejoin="round" strokeLinecap="round">
-                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" stroke="currentColor" strokeWidth="1.2" fill="currentColor" opacity="0.08"/>
-                  <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+                <svg viewBox="2 4 20 15" fill="currentColor">
+                  <circle cx="10.2" cy="9.8" r="4.8" />
+                  <circle cx="15.2" cy="10.8" r="3.6" />
+                  <circle cx="6.6" cy="12.8" r="3.6" />
+                  <circle cx="18.2" cy="13.6" r="3.1" />
+                  <rect x="6.2" y="11.2" width="12.4" height="5.6" rx="2.8" />
                 </svg>
               </div>
               <p className="empty-title">Check the weather</p>
@@ -518,7 +611,7 @@ export default function App() {
       {windDetailOpen && activeWeather && (
         <WindDetail
           current={activeWeather.current}
-          forecastDays={activeWeather.forecast?.forecastday || []}
+          forecastDays={activeWeather.daily || []}
           localtime={activeWeather.location.localtime}
           onClose={() => setWindDetailOpen(false)}
         />
@@ -528,6 +621,20 @@ export default function App() {
         <AQIDetail
           airQuality={activeWeather.current.air_quality}
           onClose={() => setAQIDetailOpen(false)}
+        />
+      )}
+
+      {settingsOpen && (
+        <SettingsPanel
+          themePref={themePref}
+          onThemeChange={setThemePref}
+          tempUnit={tempUnit}
+          onUnitChange={setTempUnit}
+          providers={providers}
+          weatherProvider={weatherProvider}
+          onProviderChange={handleProviderChange}
+          providerSwitching={providerSwitching}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
     </div>

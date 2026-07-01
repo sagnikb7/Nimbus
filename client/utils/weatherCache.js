@@ -50,11 +50,14 @@ function writeAlias(alias) {
   }
 }
 
-// Returns { data, ts, fresh } or null — looked up by location key.
-export function getCached(key) {
+// Returns { data, ts, fresh } or null — looked up by location key. When
+// `provider` is given, a cache entry from a DIFFERENT provider is treated as a
+// miss, so we never serve another provider's data (single-source integrity).
+export function getCached(key, provider) {
   if (!key) return null;
   const entry = readJSON(CACHE_KEY)[key];
   if (!entry) return null;
+  if (provider && entry.data?.provider !== provider) return null;
   return {
     data: entry.data,
     ts: entry.ts,
@@ -65,9 +68,9 @@ export function getCached(key) {
 // Resolve a raw search query (city name or "lat,lon") to its cached entry via
 // the query→key alias recorded on the last successful fetch. Lets repeat
 // searches hit the cache even though we can't know the location key up front.
-export function getCachedByQuery(query) {
+export function getCachedByQuery(query, provider) {
   const key = readJSON(ALIAS_KEY)[normalizeQuery(query)];
-  return key ? getCached(key) : null;
+  return key ? getCached(key, provider) : null;
 }
 
 // Store a weather response. The cache key is derived from the response's
@@ -112,7 +115,7 @@ export function removeCache(key) {
 //   cached  — { key: data } for cities with ANY cached data, for instant display
 //   toFetch — saved-city objects whose data is stale/missing, or that are
 //             unresolved legacy entries (no key yet), needing a fetch
-export function partitionCities(cities) {
+export function partitionCities(cities, provider) {
   const cache = readJSON(CACHE_KEY);
   const now = Date.now();
   const cached = {};
@@ -120,7 +123,10 @@ export function partitionCities(cities) {
 
   for (const c of cities) {
     const entry = c.key ? cache[c.key] : null;
-    if (entry) {
+    // Only serve a cached entry when it came from the active provider — a
+    // mismatch (or missing) entry is refetched instead of shown cross-provider.
+    const match = entry && (!provider || entry.data?.provider === provider);
+    if (match) {
       cached[c.key] = entry.data;
       if (now - entry.ts >= CACHE_TTL) toFetch.push(c);
     } else {

@@ -335,7 +335,7 @@ export function getAQISummary(airQuality) {
   if (!airQuality) return 'Air quality data is not available.';
 
   const result = calculateAQI(airQuality);
-  const epa = airQuality['us-epa-index'];
+  const epa = airQuality.epa_index;
   const level = result ? getAQILevel(result.aqi) : getAQILevelFromEpa(epa);
   const primary = getPrimaryPollutant(airQuality);
 
