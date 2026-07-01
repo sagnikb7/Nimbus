@@ -54,8 +54,9 @@ export function getPrevailingDirection(forecastDays) {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
 }
 
-// Compares average wind of past 6h vs next 6h to determine trend
-export function getWindTrend(forecastDays, localtime) {
+// Compares average wind of past 6h vs next 6h to determine trend.
+// Internal — consumed only by getWindSummary below.
+function getWindTrend(forecastDays, localtime) {
   if (!forecastDays?.length) return 'steady';
   const now = new Date(localtime);
   let pastSum = 0, pastCount = 0, futureSum = 0, futureCount = 0;

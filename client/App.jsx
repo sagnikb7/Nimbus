@@ -12,6 +12,7 @@ import WeatherParticles from './components/WeatherParticles';
 import ShareCard from './components/ShareCard';
 import WindDetail from './components/WindDetail';
 import SettingsPanel from './components/SettingsPanel';
+import CloudMark from './components/CloudMark';
 import { getWeatherMood } from './utils/weatherMood';
 import { captureShareCard, shareOrDownload } from './utils/shareUtils';
 import { getCached, getCachedByQuery, setCache, removeCache, partitionCities, getLocationKey } from './utils/weatherCache';
@@ -469,13 +470,7 @@ export default function App() {
 
       <header className="header">
         <div className="header-brand">
-          <svg className="header-logo" viewBox="2 4 20 15" fill="currentColor">
-            <circle cx="10.2" cy="9.8" r="4.8" />
-            <circle cx="15.2" cy="10.8" r="3.6" />
-            <circle cx="6.6" cy="12.8" r="3.6" />
-            <circle cx="18.2" cy="13.6" r="3.1" />
-            <rect x="6.2" y="11.2" width="12.4" height="5.6" rx="2.8" />
-          </svg>
+          <CloudMark className="header-logo" />
           <span className="header-name">Nimbus</span>
         </div>
 
@@ -577,13 +572,7 @@ export default function App() {
           !error && (
             <div className="empty-state">
               <div className="empty-icon">
-                <svg viewBox="2 4 20 15" fill="currentColor">
-                  <circle cx="10.2" cy="9.8" r="4.8" />
-                  <circle cx="15.2" cy="10.8" r="3.6" />
-                  <circle cx="6.6" cy="12.8" r="3.6" />
-                  <circle cx="18.2" cy="13.6" r="3.1" />
-                  <rect x="6.2" y="11.2" width="12.4" height="5.6" rx="2.8" />
-                </svg>
+                <CloudMark />
               </div>
               <p className="empty-title">Check the weather</p>
               <p className="empty-subtitle">Search for any city to get started</p>

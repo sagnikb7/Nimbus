@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import useAnimatedNumber from '../hooks/useAnimatedNumber';
+import useOverlayDismiss from '../hooks/useOverlayDismiss';
+import CloseButton from './CloseButton';
 import {
   WIND_CATEGORIES,
   getWindCategory,
@@ -82,18 +84,7 @@ export default function WindDetail({ current, forecastDays, localtime, onClose }
   const animSpeed = useAnimatedNumber(Math.round(current.wind.speed_kph));
   const animGust = useAnimatedNumber(Math.round(current.wind.gust_kph || 0));
 
-  // Lock body scroll
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  useOverlayDismiss(onClose);
 
   return (
     <div className="wind-overlay" onClick={onClose}>
@@ -107,12 +98,7 @@ export default function WindDetail({ current, forecastDays, localtime, onClose }
         {/* Header */}
         <div className="wind-detail-header">
           <span className="wind-detail-title">Wind Details</span>
-          <button className="wind-detail-close" onClick={onClose} aria-label="Close wind details">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <CloseButton className="wind-detail-close" onClick={onClose} label="Close wind details" />
         </div>
 
         {/* Hero */}

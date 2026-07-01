@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import useAnimatedNumber from '../hooks/useAnimatedNumber';
+import useOverlayDismiss from '../hooks/useOverlayDismiss';
+import CloseButton from './CloseButton';
 import {
   AQI_LEVELS,
   calculateAQI,
@@ -47,18 +49,7 @@ export default function AQIDetail({ airQuality, onClose }) {
 
   const animAqi = useAnimatedNumber(numericAqi ?? 0);
 
-  // Lock body scroll
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  useOverlayDismiss(onClose);
 
   return (
     <div className="aqi-overlay" onClick={onClose}>
@@ -72,12 +63,7 @@ export default function AQIDetail({ airQuality, onClose }) {
         {/* Header */}
         <div className="aqi-detail-header">
           <span className="aqi-detail-title">Air Quality</span>
-          <button className="aqi-detail-close" onClick={onClose} aria-label="Close air quality details">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <CloseButton className="aqi-detail-close" onClick={onClose} label="Close air quality details" />
         </div>
 
         {/* Hero */}

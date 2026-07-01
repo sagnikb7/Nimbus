@@ -220,7 +220,8 @@ export function getAQILevelFromEpa(epaIndex) {
 // Pollutant Reference Data
 // ============================================================
 
-export const POLLUTANT_INFO = {
+// Internal — consumed only within this module (getPrimaryPollutant / getSortedPollutants).
+const POLLUTANT_INFO = {
   pm2_5: {
     key: 'pm2_5',
     label: 'PM2.5',

@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+import useOverlayDismiss from '../hooks/useOverlayDismiss';
+import CloseButton from './CloseButton';
+import CloudMark from './CloudMark';
 
 // Icons kept inline so the panel is self-contained (stroke = currentColor).
 const SunIcon = () => (
@@ -83,18 +85,8 @@ export default function SettingsPanel({
 }) {
   const available = providers.filter((p) => p.available);
   const selected = providers.find((p) => p.id === weatherProvider);
-  // Lock body scroll while open
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
 
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  useOverlayDismiss(onClose);
 
   return (
     <div className="settings-overlay" onClick={onClose}>
@@ -107,12 +99,7 @@ export default function SettingsPanel({
       >
         <div className="settings-header">
           <span className="settings-title">Settings</span>
-          <button className="settings-close" onClick={onClose} aria-label="Close settings">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <CloseButton className="settings-close" onClick={onClose} label="Close settings" />
         </div>
 
         <section className="settings-section">
@@ -187,13 +174,7 @@ export default function SettingsPanel({
           <div className="settings-card settings-about">
             <div className="settings-about-head">
               <span className="settings-about-mark" aria-hidden="true">
-                <svg viewBox="2 4 20 15" fill="currentColor">
-                  <circle cx="10.2" cy="9.8" r="4.8" />
-                  <circle cx="15.2" cy="10.8" r="3.6" />
-                  <circle cx="6.6" cy="12.8" r="3.6" />
-                  <circle cx="18.2" cy="13.6" r="3.1" />
-                  <rect x="6.2" y="11.2" width="12.4" height="5.6" rx="2.8" />
-                </svg>
+                <CloudMark />
               </span>
               <div>
                 <div className="settings-about-name">
