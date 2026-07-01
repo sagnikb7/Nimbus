@@ -10,10 +10,14 @@ pnpm dev:client   # Vite only
 pnpm dev:server   # Express only (nodemon)
 pnpm build        # production build → dist/
 pnpm start        # serve dist/ from Express on one port
+pnpm test         # Vitest (backend only) — watch: pnpm test:watch
 ```
 
-Package manager is **pnpm** (not npm). No test runner or linter is configured —
-verification is **build + manual/visual**.
+Package manager is **pnpm** (not npm). **Vitest** covers the backend
+(`server/**/*.test.js`, config `vitest.config.mjs`) — unit tests for the adapter
+registry/`convert.js` + **live** integration tests hitting the real providers (the
+WeatherAPI test self-skips without `WEATHERAPI_KEY`). No linter; **frontend** has no
+tests — verify it via **build + manual/visual**.
 
 If ports are stuck: `lsof -ti:3033,5173 | xargs kill -9`.
 
@@ -36,8 +40,8 @@ await p.locator('.current-weather').screenshot({ path: '/tmp/hero.png' });
 await b.close();
 ```
 
-Then Read the PNG. Toggle `.theme-toggle` for light/dark. For night-mode UI, search a
-city currently in night (different timezone).
+Then Read the PNG. Open Settings (`.settings-btn`) → Appearance to switch Light/Dark/System.
+For night-mode UI, search a city currently in night (different timezone).
 
 ### Forcing a weather mood deterministically
 

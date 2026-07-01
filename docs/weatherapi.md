@@ -1,9 +1,31 @@
 # Data Providers Reference
 
-What our two data sources give us, verified against pricing + docs (June 2026).
+What our data sources give us, verified against pricing + docs (June 2026).
 Backlog items reference this file instead of restating capabilities.
 
-## Weather — WeatherAPI.com (free tier, ~1M calls/month)
+Weather is fetched through the **adapter registry** (`server/adapters/`) — each vendor is
+normalized to one neutral schema (contract in `server/adapters/README.md`). The provider is
+a **client setting** sent as `?provider=` (default `open-meteo`); keys resolve server-side.
+Both the Express route and the Netlify functions `require()` that one registry — there is no
+hand-mirrored fetch logic to keep in sync.
+
+## Weather — Open-Meteo (keyless, default provider)
+
+The default source — no key required. Merges two endpoints into the neutral schema:
+
+```
+GET https://api.open-meteo.com/v1/forecast?…&current=…&hourly=…&daily=…&timezone=auto&forecast_days=7
+GET https://air-quality-api.open-meteo.com/v1/air-quality?…&current=pm2_5,pm10,ozone,…,us_aqi
+```
+
+- **7-day** forecast (vs WeatherAPI's 3) — `Forecast.jsx` renders whatever length `daily[]` has.
+- Adapter absorbs the gaps: WMO code → neutral condition id, wind degrees → compass, ISO →
+  "h:mm AM", `us_aqi` (0–500) → EPA index (1–6). **No** severe-weather alerts (`alerts: []`),
+  **no** moon phase, **no** vendor icons (`icon_url: ""` → bundled Meteocon fallback).
+- `lat,lon` queries are reverse-geocoded to a place name via **BigDataCloud** (keyless).
+- Same free geocoding backend as autocomplete (below); generous limits, quota a non-issue.
+
+## Weather — WeatherAPI.com (optional; free tier, ~1M calls/month)
 
 One call powers the whole app:
 
@@ -12,8 +34,7 @@ GET https://api.weatherapi.com/v1/forecast.json?key=…&q=…&days=3&aqi=yes&ale
 → current + hourly + 3-day forecast + astro + AQI + government alerts
 ```
 
-Server-side only (key hidden): `server/routes/weather.js` and its Netlify mirror
-`netlify/functions/weather.js` — **keep both in sync.** The `q` param accepts a city
+Server-side only (key hidden), via the `weatherapi` adapter. The `q` param accepts a city
 name *or* `lat,lng` (used by geolocation + autocomplete selection).
 
 ### Free-tier capabilities
@@ -74,5 +95,6 @@ rotates the sun 360° over 45s, `rain.svg` has 6 animated drops, `thunderstorms-
 - **Rendered as `<img src=…>`** in `CurrentWeather` / `Forecast` / `HourlyForecast`. This
   matters: **SMIL animations DO play through `<img>`** (CSS/JS-driven SVG animation would
   not — SMIL does), so the icons animate live in the app with zero JS.
-- **`ShareCard` exception:** uses the WeatherAPI **raster PNG**, because html2canvas can't
-  reliably rasterize gradient/animated SVGs into the share image.
+- **`ShareCard` exception:** prefers the vendor's **raster icon** (`condition.icon_url`, e.g.
+  WeatherAPI's PNG) because html2canvas can't reliably rasterize gradient/animated SVGs; when the
+  provider supplies none (Open-Meteo), it falls back to the bundled Meteocon via `getWeatherIcon`.

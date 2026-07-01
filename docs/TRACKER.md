@@ -5,7 +5,7 @@ _Knowledge (why / how / specs) lives in the other [`docs/`](README.md) files —
 to them rather than restating. Prioritized by free-tier feasibility (see
 [`weatherapi.md`](weatherapi.md)) and effort-to-impact._
 
-_Last updated: 2026-06-13._
+_Last updated: 2026-07-01._
 
 ## 🔭 Now / in flight
 
@@ -29,7 +29,7 @@ Full spec + decisions: [`dynamic-weather.md`](dynamic-weather.md). CSS-only ceil
 - [ ] Night becomes a modifier, not a mood (`data-mood` weather + `data-period` day/night)
 - [ ] Night-variant palettes per weather mood (retire the standalone purple "night")
 - [ ] Intensity tiers (`light/moderate/heavy` from code + `precip_mm`) scale particle density/speed
-- [ ] Wind-driven particle angle + speed (`--wind-angle` from `wind_degree`)
+- [ ] Wind-driven particle angle + speed (`--wind-angle` from `current.wind.degree`)
 - [ ] Choreographed city-change transitions (cross-fade particles, unify timings)
 - [ ] Decouple `--mood-accent` (decorative) from `--ui-accent` (controls, WCAG-AA on glass)
 
@@ -37,7 +37,7 @@ Full spec + decisions: [`dynamic-weather.md`](dynamic-weather.md). CSS-only ceil
 - [ ] Streak-shaped precipitation (amend [`particles.md`](particles.md) hard rules)
 - [ ] Parallax depth layers (2–3)
 - [ ] Restore perf-safe ambient motion (transform-only)
-- [ ] Temperature tint (warm↔cool from `temp_c`)
+- [ ] Temperature tint (warm↔cool from `current.temp.c`)
 - [ ] Continuous time-of-day sky gradient (solar position)
 
 ### 🌦 Weather-data features
@@ -47,13 +47,13 @@ WeatherDetails (dewpoint + pressure trend).
 
 **P0 — data already fetched, UI missing (no new API calls)**
 - [ ] Hourly rain-probability bars under each `HourlyForecast` tile (`chance_of_rain`) · S
-- [ ] Hourly cloud-cover fill behind tiles (`hour[].cloud`) · S
-- [ ] Max-wind + total-snow chips on daily `Forecast` rows (`maxwind_kph`, `totalsnow_cm`) · S
-- [ ] Tomorrow drill-down overlay from a `Forecast` row (`forecastday[1].hour[]`) · M
+- [ ] Hourly cloud-cover fill behind tiles (needs `hour[].cloud_cover` added to the neutral schema) · S
+- [x] Max-wind chip on daily `Forecast` rows — shipped 2026-07-01 (rows now show chance-of-rain + max-wind, the two metrics both providers supply; total-snow/UV chips dropped for cross-provider consistency)
+- [ ] Tomorrow drill-down overlay from a `Forecast` row (`daily[1].hour[]`) · M
 - [ ] Dewpoint pill in `WeatherDetails` (+ "Muggy/Comfortable/Dry") · S
 - [ ] Pressure-trend arrow on the Pressure pill · S
 - [ ] Moon-phase + illumination card (sibling of `SunriseSunset`) · M
-- [ ] Visibility detail card (drill-down from Visibility pill, `hour[].vis_km`) · M
+- [ ] Visibility detail card (drill-down from Visibility pill; needs hourly visibility added to the neutral schema) · M
 
 **P1 — free, smart logic or one extra call**
 - [ ] Natural-language daily summary ("Warm morning, rain after 2 PM…") — highest delight · M
@@ -93,7 +93,8 @@ The *why* for notable items is in [`DECISIONS.md`](DECISIONS.md); full history i
 - **Provider-exclusive detail pills** — **moon phase** (WeatherAPI `astro.moon_phase`, accurate inline
   SVG glyph from illumination + waxing/waning) and **cloud cover** (common to both) added to the details
   carousel; each renders only when the field is present (the per-field-adaptivity pattern). Forecast rows
-  dropped the UV chip (max-wind + precip + snow remain).
+  simplified to two always-on chips — chance of rain + max wind (the metrics BOTH providers supply);
+  the UV/snow/precip-threshold chips were dropped for cross-provider consistency.
 - **Settings page** — new full-screen `SettingsPanel` sheet opened by a header **gear** (replaced the
   unit + theme toggles). Appearance (theme **Light/Dark/System** — new tri-state; System follows the OS
   live), Units (°C/°F), About (features, `v{__APP_VERSION__}` via Vite `define`, GitHub link, Made with ♥).
@@ -107,7 +108,8 @@ The *why* for notable items is in [`DECISIONS.md`](DECISIONS.md); full history i
   exports a `meta` descriptor; registry adds `DEFAULT_PROVIDER`/`resolveKey`/`isAvailable`/
   `listProviders`. New `GET /api/providers` capability endpoint (no keys) + Netlify function; server
   logs available providers on boot; route validates the requested provider. Key renamed
-  `WEATHER_API_KEY` → `WEATHERAPI_KEY` (legacy fallback). Deferred: selector UI + cache-by-provider.
+  `WEATHER_API_KEY` → `WEATHERAPI_KEY` (legacy fallback). (Selector UI shipped separately the same day;
+  cache-by-provider still deferred.)
 - **Backend test suite (Vitest)** — first tests in the repo. Pure units for `convert.js` +
   registry; **live** integration for both adapters and the `/api/weather` route (no mocks — real
   providers; WeatherAPI self-skips without a key). `pnpm test`.
@@ -153,13 +155,11 @@ The *why* for notable items is in [`DECISIONS.md`](DECISIONS.md); full history i
 ## ⚠️ Watch-outs
 
 - **Weather vendor logic is shared, not mirrored** — both `server/routes/weather.js` and
-  `netlify/functions/weather.js` `require('../adapters')`. Add/patch vendors in
-  `server/adapters/` (keep the neutral schema in `adapters/README.md`); the two entrypoints only
-  read `WEATHER_PROVIDER` and delegate. No more editing two copies of the fetch.
-- **`axios` is now unused** (adapters use global `fetch`) — safe to drop from `package.json` on
-  the next dependency pass.
+  `netlify/functions/weather.js` `require()` the same `server/adapters/` registry. Add/patch vendors
+  there (keep the neutral schema in `adapters/README.md`); both entrypoints resolve the provider from
+  `?provider=` and delegate. No more editing two copies of the fetch.
 - **Backend has tests, no linter** — `pnpm test` (Vitest, `server/**/*.test.js`). Adapter/route
-  tests are **live** (hit real providers); the WeatherAPI one self-skips without `WEATHER_API_KEY`.
+  tests are **live** (hit real providers); the WeatherAPI one self-skips without `WEATHERAPI_KEY`.
   Frontend still has no tests — verify via build + the visual recipe in [`dev-workflow.md`](dev-workflow.md).
 - `weatherAlias` localStorage map grows with unique search strings (tiny; pruned only on key
   removal). Negligible.

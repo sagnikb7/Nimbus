@@ -22,9 +22,13 @@ Keep entries short; link to code/`CLAUDE.md` for detail.
   log, and the test matrix fall out for free. Keeping keys as env-var *names* (resolved at runtime)
   keeps secrets out of any serialized/logged structure and out of the client payload. Treating the
   query param as untrusted input is basic hardening.
-- **Deferred:** the settings selector UI; and cache-keying by provider (values differ per provider —
-  `weatherCache.js` keys by location only today, fine while one default is used).
-- **Status:** ✅ Done (backend + client plumbing + tests). Selector UI pending.
+- **Update (same day):** the settings selector UI shipped — `SettingsPanel` → Data provider; switching
+  background-refreshes every saved city and migrates cross-provider location keys.
+- **Deferred:** cache-keying by provider — `getCached`/`partitionCities` now treat a different-provider
+  entry as a miss (so stale cross-provider data is never shown) and switch-time migration re-keys, but a
+  cold load can still briefly serve the prior provider's values before the refresh lands. Namespacing the
+  cache key by provider would close that gap.
+- **Status:** ✅ Done (backend + client plumbing + selector UI + tests).
 
 ## 2026-07-01 — Multi-vendor weather via a server-side adapter + neutral schema
 
@@ -227,5 +231,5 @@ Keep entries short; link to code/`CLAUDE.md` for detail.
 
 - **Caching:** localStorage, 15-min TTL, stale-while-revalidate, quota-aware pruning (`utils/weatherCache.js`).
 - **Design system "Radiant":** dual-layer theming — `data-theme` (dark/light) × `data-mood` (6 weather moods) remap `--accent`, `--ambient-*`, `--temp-gradient`. Glassmorphism throughout. (`CLAUDE.md` → Theming.)
-- **Deployment:** Netlify; `netlify/functions/*` are standalone `fetch`-based mirrors of the Express routes — **keep them in sync**.
-- **API:** WeatherAPI.com free tier (~1M calls/month). One `forecast.json?days=3&aqi=yes` call returns current + hourly + 3-day + astro + AQI.
+- **Deployment:** Netlify; `netlify/functions/{weather,providers}.js` `require()` the **same** `server/adapters/` registry as the Express routes — no hand-mirrored fetch logic (add/patch vendors in `server/adapters/` only).
+- **API / providers:** multi-vendor via the adapter registry. Default is **Open-Meteo** (keyless: forecast + air-quality merged, 7-day). **WeatherAPI.com** (free tier ~1M/mo, 3-day, one `forecast.json?days=3&aqi=yes&alerts=yes` call) is optional (needs `WEATHERAPI_KEY`). Provider is a client setting sent as `?provider=`.
