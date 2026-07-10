@@ -1403,14 +1403,6 @@ body::before {
 
 .empty-locate:disabled { opacity: 0.9; cursor: default; box-shadow: none; }
 
-.empty-locate-spinner {
-  width: 15px;
-  height: 15px;
-  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
-  border-top-color: currentColor;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
 
 
 /* ===========================
