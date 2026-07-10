@@ -1,0 +1,21 @@
+# Netlify headers — copied verbatim from public/ into dist/ at build.
+# Goal: never serve a stale service worker or manifest, and let the browser
+# cache hashed assets aggressively.
+
+# Service worker must always be revalidated so updates ship promptly.
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+# Workbox runtime + registration helpers.
+/workbox-*.js
+  Cache-Control: no-cache
+
+# Web app manifest: correct MIME type + revalidate.
+/manifest.webmanifest
+  Content-Type: application/manifest+json; charset=utf-8
+  Cache-Control: no-cache
+
+# Hashed build assets are immutable — cache for a year.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

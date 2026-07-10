@@ -20,34 +20,85 @@ export default defineConfig({
       // Static assets to precache that aren't caught by globPatterns
       includeAssets: ['favicon.svg', 'apple-touch-icon-180x180.png'],
 
+      // Turn the SW on in dev too, so the install criteria (registered SW +
+      // manifest) are satisfied at http://localhost:5173 during `pnpm dev` —
+      // without this the address-bar install icon never appears while developing.
+      devOptions: {
+        enabled: true,
+        type: 'module',
+        navigateFallback: 'index.html',
+      },
+
       // Web App Manifest — controls install appearance and behavior
       manifest: {
+        id: '/',                      // Stable app identity (dedupes installs)
         name: 'Nimbus Weather',
         short_name: 'Nimbus',
         description: 'Beautiful weather forecasts with a native feel',
+        lang: 'en',
+        dir: 'ltr',
+        categories: ['weather', 'utilities', 'lifestyle'],
         theme_color: '#667eea',       // Status bar color (matches --accent)
         background_color: '#0f0f1a',  // Splash screen bg (matches dark theme body)
         display: 'standalone',        // No browser chrome — full native feel
+        display_override: ['standalone', 'minimal-ui'],
         orientation: 'portrait',
         scope: '/',
-        start_url: '/',
+        start_url: '/?source=pwa',    // Distinguishes launches from the installed app
         icons: [
           {
             src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
           },
           {
-            // Maskable: OS can apply its own shape mask (circle, squircle, etc.)
-            src: 'pwa-512x512.png',
+            // Maskable uses a PADDED variant (safe-zone) so the OS mask
+            // (circle/squircle) never clips the cloud — see generate-icons.js.
+            src: 'maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
+          },
+        ],
+        // Long-press / right-click app shortcuts (handled on mount in App.jsx).
+        shortcuts: [
+          {
+            name: 'My Location',
+            short_name: 'Location',
+            description: "Get weather for where you are",
+            url: '/?action=locate',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Search a city',
+            short_name: 'Search',
+            description: 'Search weather for any city',
+            url: '/?action=search',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
+        // Rich install dialog (Chrome upgrades the mini-infobar when present).
+        screenshots: [
+          {
+            src: 'screenshots/mobile.png',
+            sizes: '1080x1920',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Nimbus on mobile',
+          },
+          {
+            src: 'screenshots/wide.png',
+            sizes: '1920x1080',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Nimbus on desktop',
           },
         ],
       },

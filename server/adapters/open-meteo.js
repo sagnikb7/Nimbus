@@ -59,9 +59,9 @@ async function fetchWeather(city) {
 
   const forecastUrl =
     `${FORECAST}?latitude=${loc.lat}&longitude=${loc.lon}` +
-    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,is_day,weather_code,` +
+    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,is_day,weather_code,` +
     `wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,surface_pressure,visibility,uv_index,cloud_cover` +
-    `&hourly=temperature_2m,weather_code,is_day,wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
+    `&hourly=temperature_2m,weather_code,is_day,precipitation_probability,precipitation,snowfall,wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
     `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max,` +
     `snowfall_sum,wind_speed_10m_max,uv_index_max,sunrise,sunset` +
     `&timezone=auto&forecast_days=${FORECAST_DAYS}`;
@@ -94,6 +94,9 @@ async function fetchWeather(city) {
         temp: { c: hourly.temperature_2m[j], f: cToF(hourly.temperature_2m[j]) },
         condition: { id: wmoToConditionId(code), text: wmoToText(code) },
         is_day: hourly.is_day[j],
+        chance_of_rain: hourly.precipitation_probability?.[j] ?? 0,
+        precip_mm: hourly.precipitation?.[j] ?? 0,
+        snow_cm: hourly.snowfall?.[j] ?? 0,
         wind: {
           speed_kph: hourly.wind_speed_10m[j],
           dir: degToCompass(deg),
@@ -148,6 +151,7 @@ async function fetchWeather(city) {
         gust_kph: cur.wind_gusts_10m,
       },
       humidity: cur.relative_humidity_2m,
+      dewpoint: cur.dew_point_2m != null ? { c: cur.dew_point_2m, f: cToF(cur.dew_point_2m) } : null,
       uv: cur.uv_index,
       precip_mm: cur.precipitation,
       visibility_km: cur.visibility != null ? Math.round(cur.visibility / 100) / 10 : null,

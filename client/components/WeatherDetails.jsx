@@ -1,4 +1,5 @@
 import { calculateAQI, getAQILevel, getAQILevelFromEpa } from '../utils/aqiUtils';
+import { getDewComfort } from '../utils/comfortUtils';
 
 // Accurate moon-phase glyph drawn from illumination (%) + waxing/waning.
 // The lit region = a semicircle on the lit side joined to an elliptical
@@ -29,7 +30,7 @@ function MoonPhaseIcon({ phase, illumination }) {
   );
 }
 
-export default function WeatherDetails({ current, onWindClick, onAQIClick }) {
+export default function WeatherDetails({ current, tempUnit = 'c', onWindClick, onAQIClick, onPrecipClick }) {
   const aq = current.air_quality;
   const result = aq ? calculateAQI(aq) : null;
   const epa = aq?.epa_index;
@@ -45,14 +46,15 @@ export default function WeatherDetails({ current, onWindClick, onAQIClick }) {
   const aqiConcerning = aqiLevel && ((numericAqi != null && numericAqi > 100) || (numericAqi == null && epa >= 3));
   const aqiSevere = aqiLevel && ((numericAqi != null && numericAqi > 200) || (numericAqi == null && epa >= 5));
 
-  // Ordered by priority + light thematic grouping so the carousel reads intentionally:
-  //   1) Interactive / health  → AQI, Wind (tap for detail)
-  //   2) Comfort               → Humidity, UV
-  //   3) Sky & precipitation   → Cloud, Precip
-  //   4) Physical atmosphere   → Visibility, Pressure
-  //   5) Celestial (exclusive) → Moon phase
+  // Ordered by priority — the three tiles with rich drill-downs lead (Precip,
+  // AQI, Wind), then the rest by importance, then the provider-exclusive extra:
+  //   1) Interactive / high-value → Precip, AQI, Wind (tap for detail)
+  //   2) Comfort                  → Humidity, UV
+  //   3) Sky & atmosphere         → Cloud, Visibility, Pressure
+  //   4) Celestial (exclusive)    → Moon phase
   const details = [
-    // 1) Interactive / health
+    // 1) Interactive / high-value
+    { label: 'Precip', value: `${current.precip_mm} mm`, onClick: onPrecipClick },
     ...(aqiLevel
       ? [{
           label: 'AQI',
@@ -65,14 +67,15 @@ export default function WeatherDetails({ current, onWindClick, onAQIClick }) {
     { label: 'Wind', value: `${current.wind.speed_kph} km/h`, onClick: onWindClick },
     // 2) Comfort
     { label: 'Humidity', value: `${current.humidity}%` },
+    ...(current.dewpoint != null
+      ? [{ label: getDewComfort(current.dewpoint.c) || 'Dew Point', value: `${Math.round(current.dewpoint[tempUnit])}°` }]
+      : []),
     { label: 'UV Index', value: current.uv },
-    // 3) Sky & precipitation
+    // 3) Sky & atmosphere
     ...(current.cloud_cover != null ? [{ label: 'Cloud', value: `${current.cloud_cover}%` }] : []),
-    { label: 'Precip', value: `${current.precip_mm} mm` },
-    // 4) Physical atmosphere
     { label: 'Visibility', value: `${current.visibility_km} km` },
     { label: 'Pressure', value: `${current.pressure_mb} hPa` },
-    // 5) Celestial — provider-exclusive (WeatherAPI). 2-liner: [glyph + illum%] / phase name.
+    // 4) Celestial — provider-exclusive (WeatherAPI). 2-liner: [glyph + illum%] / phase name.
     ...(current.moon_phase
       ? [{
           label: current.moon_phase,

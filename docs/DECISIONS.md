@@ -5,6 +5,52 @@ Keep entries short; link to code/`CLAUDE.md` for detail.
 
 ---
 
+## 2026-07-10 — v1.6.0 UI/UX: dark-dark background, accent-fill contrast token, touch dock
+
+- **Context:** A run of UX passes on top of the multi-vendor + detail-page work. Three calls were
+  non-obvious enough to record so they aren't re-litigated.
+- **Decision:**
+  1. **Background stays dark-dark.** The mood/solar-driven "living sky" backdrop was built, then
+     **reverted** to a single fixed **corner accent glow** over a solid `--bg` (`--backdrop-glow`,
+     both themes). Weather expressiveness lives in the **particle layer** + accent tokens, not the
+     backdrop. (See [`dynamic-weather.md`](dynamic-weather.md).)
+  2. **Accent-fill contrast token `--on-accent`.** Filled `--ui-accent` controls must use
+     `color: var(--on-accent)` (near-black in dark theme, white in light) — never hardcoded
+     `#fff`. Light-theme control *fills* are darkened (teal/amber/blue) so white text passes
+     WCAG-AA. White-on-bright-accent was a real contrast failure.
+  3. **Touch dock = long-press action sheet.** On coarse pointers the inline pin/✕ are hidden;
+     press-and-hold a dock pill opens a bottom sheet (Pin/Remove) with a persistent ✕ + one-time
+     hint. Swipe was rejected (conflicts with the dock's horizontal scroll).
+  - Also: single-line header (wordmark dropped → search fills the line), empty state became the
+    brand/onboarding moment (raster app icon + wordmark + chips), hero card elevated with a
+    mood-accent gradient rim, detail heroes de-duplicated ("At a Glance" is the single narrative),
+    and active list/scale rows use a **background tint, never an accent left-stripe**.
+- **Rationale:** The user consistently wanted restraint (proper dark mode, no colored washes) and
+  legibility; a paired `--on-accent` token is the systemic fix for contrast; long-press is the
+  best-practice touch pattern for a horizontal dock.
+- **Status:** ✅ Done (v1.6.0) — verified via Playwright screenshots. See `CLAUDE.md` +
+  [`TRACKER.md`](TRACKER.md) done log.
+
+## 2026-07-10 — PWA: dev SW on, Settings-only install UI, richer manifest
+
+- **Context:** The address-bar install icon never appeared. Root cause: `vite-plugin-pwa`
+  disables the service worker in dev, so `localhost` failed the "registered SW" install
+  criterion; the manifest was also minimal (no maskable icon, shortcuts, or screenshots) and
+  there was no in-app install/update affordance.
+- **Decision:** Turn the SW on in dev (`devOptions.enabled: true`). Complete the manifest
+  (`id`, `lang`, `dir`, `categories`, `display_override`, a **padded maskable** icon, app
+  **shortcuts** `?action=locate|search`, and **screenshots** narrow+wide). Add `usePWA`
+  (captures `beforeinstallprompt`) and drive install **only from Settings → Install** — no
+  header button, no auto-banner. Show SW update/offline state via `useRegisterSW`
+  (`virtual:pwa-register/react`, needs `workbox-window`). Ship `public/_headers` for
+  SW/manifest `no-cache` + MIME + immutable `/assets`. **No `share_target`.**
+- **Rationale:** `devOptions` is the actual fix for the missing icon and lets us verify
+  installability locally. Settings-only keeps the header uncluttered and trusts the browser's
+  native install icon for discovery (user preference). A maskable icon prevents mask clipping;
+  screenshots upgrade Chrome's install dialog. Skipping `share_target` avoids inbound-routing
+  complexity Nimbus doesn't need (it's a share *source*).
+- **Status:** ✅ Done — see [`pwa.md`](pwa.md) and `CLAUDE.md` → PWA.
+
 ## 2026-07-01 — Provider selection moved client-side + per-provider capability descriptors
 
 - **Context:** The provider was fixed server-side (`WEATHER_PROVIDER` env) with a single generic

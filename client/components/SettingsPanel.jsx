@@ -1,6 +1,5 @@
 import useOverlayDismiss from '../hooks/useOverlayDismiss';
 import CloseButton from './CloseButton';
-import CloudMark from './CloudMark';
 
 // Icons kept inline so the panel is self-contained (stroke = currentColor).
 const SunIcon = () => (
@@ -81,6 +80,7 @@ export default function SettingsPanel({
   themePref, onThemeChange,
   tempUnit, onUnitChange,
   providers = [], weatherProvider, onProviderChange, providerSwitching,
+  canInstall, isInstalled, isIOS, onInstall,
   onClose,
 }) {
   const available = providers.filter((p) => p.available);
@@ -170,15 +170,59 @@ export default function SettingsPanel({
         )}
 
         <section className="settings-section">
+          <h3 className="settings-label">Install</h3>
+          <div className="settings-card">
+            {isInstalled ? (
+              <div className="settings-install settings-install-done">
+                <span className="settings-install-check" aria-hidden="true">✓</span>
+                <div>
+                  <div className="settings-install-title">Nimbus is installed</div>
+                  <p className="settings-install-hint">You're running the installed app.</p>
+                </div>
+              </div>
+            ) : canInstall ? (
+              <div className="settings-install">
+                <div>
+                  <div className="settings-install-title">Install Nimbus</div>
+                  <p className="settings-install-hint">
+                    Add it to your device for a full-screen, offline-ready app.
+                  </p>
+                </div>
+                <button type="button" className="settings-install-btn" onClick={onInstall}>
+                  Install
+                </button>
+              </div>
+            ) : isIOS ? (
+              <div className="settings-install settings-install-ios">
+                <div className="settings-install-title">Add to Home Screen</div>
+                <ol className="settings-install-steps">
+                  <li>Tap the <strong>Share</strong> button in Safari.</li>
+                  <li>Choose <strong>Add to Home Screen</strong>.</li>
+                  <li>Tap <strong>Add</strong> — Nimbus launches full-screen.</li>
+                </ol>
+              </div>
+            ) : (
+              <div className="settings-install">
+                <div>
+                  <div className="settings-install-title">Install Nimbus</div>
+                  <p className="settings-install-hint">
+                    Use your browser's install option (address bar or menu) to add Nimbus
+                    to your device.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="settings-section">
           <h3 className="settings-label">About</h3>
           <div className="settings-card settings-about">
             <div className="settings-about-head">
-              <span className="settings-about-mark" aria-hidden="true">
-                <CloudMark />
-              </span>
+              <img className="settings-about-mark" src="/pwa-192x192.png" alt="Nimbus app icon" />
               <div>
                 <div className="settings-about-name">
-                  Nimbus <span className="settings-about-version">v{__APP_VERSION__}</span>
+                  <span className="brand-word">Nimbus</span> <span className="settings-about-version">v{__APP_VERSION__}</span>
                 </div>
                 <p className="settings-about-tagline">Beautiful, fast weather with a native feel.</p>
               </div>

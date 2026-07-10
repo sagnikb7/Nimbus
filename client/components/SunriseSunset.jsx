@@ -1,13 +1,5 @@
 import { SUN_ICONS } from '../utils/weatherIcon';
-
-function parseTime(str) {
-  if (!str || !str.includes(':')) return NaN;
-  const [time, period] = str.split(' ');
-  let [h, m] = time.split(':').map(Number);
-  if (period === 'PM' && h !== 12) h += 12;
-  if (period === 'AM' && h === 12) h = 0;
-  return h * 60 + m;
-}
+import { parseTime } from '../utils/atmosphere';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 

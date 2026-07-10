@@ -1,30 +1,33 @@
 # Nimbus
 
-A modern weather app with real-time forecasts, air quality, animated backgrounds, and a glassmorphism UI. Built with React 19 and Express.
+A modern weather app with real-time forecasts, deep air-quality / wind / precipitation detail, and a glassmorphism UI. Built with React 19 and Express.
 
 ---
 
 ## Features
 
-- **Real-time weather** -- current temperature, feels-like, humidity, wind, UV, pressure, visibility, precipitation, cloud cover, and (WeatherAPI) moon phase
+- **Real-time weather** -- current temperature, feels-like, humidity, dew point (with a comfort read), wind, UV, pressure, visibility, precipitation, cloud cover, and (WeatherAPI) moon phase
 - **Multi-day forecast** -- provider-driven length (Open-Meteo 7 days, WeatherAPI 3) with daily highs/lows, condition icons, and rain/wind chips
 - **Choice of data provider** -- switch between **Open-Meteo** (keyless, default) and **WeatherAPI.com** in Settings; the app re-pulls every saved city from the new source
-- **Hourly forecast** -- scrollable hour-by-hour breakdown with "now" highlight
-- **Air quality** -- numeric US AQI (0–500) calculated from EPA breakpoint tables, shown as a tappable pill with a full detail drill-down (primary pollutant, pollutant breakdown grid, AQI scale ladder, outdoor guidance, educational section)
+- **Hourly forecast** -- temperature trend graph (smooth curve, night bands, rain-probability bars, "now" marker) over the next 24h
+- **Detail drill-downs** -- tap a stat pill for a full, novice-friendly detail page, each ordered *important-first* (verdict → plain-language takeaway → hourly graph → reference → learn):
+  - **Air quality** -- numeric US AQI (0–500) from EPA breakpoint tables; primary pollutant, breakdown grid, scale ladder, outdoor guidance
+  - **Wind** -- Beaufort category, an hourly wind + gust graph with direction arrows, gust assessment, prevailing direction
+  - **Precipitation** -- current type/intensity, an hourly amount-vs-probability graph, today's totals, multi-day outlook, rain-intensity scale
 - **Smart caching** -- localStorage-backed weather cache with 15-minute TTL and stale-while-revalidate pattern to minimize API calls
 - **Freshness indicator** -- "Updated X mins ago" label so you always know how current the data is
 - **Settings sheet** -- theme, units, and data-provider controls behind a header gear
 - **Temperature units** -- toggle between Celsius and Fahrenheit, persisted across sessions
 - **Geolocation** -- one-tap GPS button to get weather for your current location
-- **Saved locations** -- auto-added, pinnable cities (up to 5) in a bottom dock bar, persisted in localStorage
-- **Share weather** -- generate a styled weather card image and share via Web Share API or download as PNG
-- **Animated backgrounds** -- CSS particle system per weather mood (floating orbs, twinkling stars, drifting clouds, rain, snow, lightning). Respects `prefers-reduced-motion`.
+- **Saved locations** -- auto-added, pinnable cities (up to 5) in a bottom dock bar; on touch, **press-and-hold** a city for a Pin/Remove action sheet
+- **Share weather** -- generate a styled weather "ad" card image and share via Web Share API or download as PNG
+- **Weather effects** -- CSS precipitation particles (wind-leaning rain/storm streaks and snow that scale with intensity) plus clear-night stars; a subtle accent-glow backdrop. Respects `prefers-reduced-motion`.
 - **Sunrise / sunset** -- animated timeline with progress dot and glow
 - **Theme** -- Light / Dark / System (follows the OS live), chosen in Settings and remembered
-- **Chromatic moods** -- the entire color palette shifts based on weather conditions (amber for clear, indigo for night, violet for storms, etc.)
+- **Chromatic moods** -- the accent palette shifts with the weather (amber for clear, blue for rain, violet for storms, ice for snow); day/night is a separate lighting modifier
 - **Installable PWA** -- install to home screen on mobile or desktop for a full-screen native experience with offline support
-- **Responsive** -- single-column layout with bottom dock, optimized for mobile and desktop
-- **Glassmorphism UI** -- frosted glass cards, 3-layer ambient gradient background, fluid typography
+- **Responsive** -- single-column layout (search fills a one-line header) with a bottom dock, optimized for mobile and desktop
+- **Glassmorphism UI** -- frosted glass cards, an accent-glow backdrop, contrast-guarded controls, fluid typography
 
 ## Tech Stack
 
@@ -36,7 +39,7 @@ A modern weather app with real-time forecasts, air quality, animated backgrounds
 | Geocoding | [Open-Meteo geocoding](https://open-meteo.com/en/docs/geocoding-api) (browser-direct, CC-BY 4.0) |
 | PWA | vite-plugin-pwa, Workbox |
 | Styling | CSS custom properties, glassmorphism, CSS particle animations |
-| Typography | Space Grotesk + Inter (Google Fonts) |
+| Typography | Space Grotesk + Hanken Grotesk (Google Fonts) |
 | Share | html2canvas, Web Share API |
 | Package manager | pnpm |
 | Testing | Vitest (backend) |
@@ -103,25 +106,34 @@ nimbus/
 │   ├── components/
 │   │   ├── SearchBar.jsx           Search input + GPS + autocomplete combobox
 │   │   ├── CurrentWeather.jsx      Hero temp, condition, H/Feels/L, freshness
-│   │   ├── WeatherDetails.jsx      Scrollable stat pills (AQI, Wind, Humidity, UV, Cloud, Moon, ...)
+│   │   ├── WeatherDetails.jsx      Scrollable stat pills (Precip, AQI, Wind, Humidity, Dew Point, UV, ...)
 │   │   ├── AQIDetail.jsx           Full-screen AQI detail drill-down
 │   │   ├── WindDetail.jsx          Full-screen wind detail drill-down
-│   │   ├── AirQuality.jsx          Compact AQI card
+│   │   ├── WindHourlyGraph.jsx     Hourly wind + gust graph (in WindDetail)
+│   │   ├── PrecipDetail.jsx        Full-screen precipitation detail drill-down
+│   │   ├── PrecipHourlyGraph.jsx   Hourly amount + probability graph (in PrecipDetail)
 │   │   ├── AlertsBanner.jsx        Severe-weather alerts (WeatherAPI)
-│   │   ├── HourlyForecast.jsx      Hour-by-hour scroll
+│   │   ├── HourlyForecast.jsx      Hourly temperature trend graph
 │   │   ├── Forecast.jsx            Provider-driven multi-day forecast rows
 │   │   ├── SunriseSunset.jsx       Sunrise/sunset timeline
-│   │   ├── Sidebar.jsx             Bottom dock bar (saved cities)
+│   │   ├── Sidebar.jsx             Bottom dock bar + touch long-press action sheet
 │   │   ├── SettingsPanel.jsx       Settings sheet (theme, units, provider, about)
-│   │   ├── WeatherParticles.jsx    CSS particle animations per mood
+│   │   ├── CloseButton.jsx         Shared overlay ✕ button
+│   │   ├── WeatherParticles.jsx    CSS precipitation particles + clear-night stars
 │   │   └── ShareCard.jsx           Off-screen card for image capture
 │   ├── hooks/
-│   │   └── useAnimatedNumber.js    rAF-based number transitions
+│   │   ├── useAnimatedNumber.js    rAF-based number transitions
+│   │   ├── useOverlayDismiss.js    Escape + scroll-lock for overlays
+│   │   └── usePWA.js               beforeinstallprompt capture / install state
 │   └── utils/
-│       ├── weatherMood.js          Condition id → mood mapping
+│       ├── weatherMood.js          Condition id → mood mapping (+ code-group sets)
+│       ├── atmosphere.js           Day/night period + precip intensity
 │       ├── weatherIcon.js          Condition id + is_day → bundled Meteocon
 │       ├── aqiUtils.js             EPA AQI breakpoint calculation + pollutant helpers
 │       ├── windUtils.js            Beaufort categories + wind helpers
+│       ├── precipUtils.js          Precip intensity/type + hourly + plain-language summary
+│       ├── comfortUtils.js         Dew-point comfort mapping
+│       ├── chart.js                Shared graph helpers (Catmull-Rom curve, hour labels)
 │       ├── weatherCache.js         localStorage cache with 15-min TTL + SWR (provider-aware)
 │       └── shareUtils.js           html2canvas capture + Web Share
 ├── server/                         Express backend

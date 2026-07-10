@@ -19,10 +19,14 @@ describe.skipIf(!isAvailable('weatherapi'))('weatherapi adapter (live)', () => {
     expect(typeof d.current.temp.f).toBe('number');
     expect(typeof d.current.condition.id).toBe('number');
     expect(d.current.condition.icon_url).toMatch(/^https:/);
+    expect(typeof d.current.dewpoint.c).toBe('number');
     expect(typeof d.current.wind.dir).toBe('string');
     expect(Array.isArray(d.alerts)).toBe(true);
     expect(d.daily.length).toBe(3);
     expect(d.daily[0].hour.length).toBeGreaterThan(0);
+    expect(typeof d.daily[0].hour[0].chance_of_rain).toBe('number');
+    expect(typeof d.daily[0].hour[0].precip_mm).toBe('number');
+    expect(typeof d.daily[0].hour[0].snow_cm).toBe('number');
 
     if (d.current.air_quality) {
       expect(d.current.air_quality.epa_index).toBeGreaterThanOrEqual(1);

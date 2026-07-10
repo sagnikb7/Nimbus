@@ -19,6 +19,16 @@
   --accent:          #22d3ee;
   --accent-glow:     rgba(34, 211, 238, 0.15);
   --accent-soft:     rgba(34, 211, 238, 0.08);
+  /* UI accent = controls/focus, contrast-guarded on glass. Distinct from the
+     decorative --accent so pale moods can't make buttons/focus rings illegible.
+     Defaults to --accent; only pale moods override it. */
+  --ui-accent:       var(--accent);
+  --ui-accent-glow:  var(--accent-glow);
+  --ui-accent-soft:  var(--accent-soft);
+  /* Text/icon color that sits ON a solid --ui-accent fill. Dark theme accents
+     are bright, so this is near-black (white-on-accent was a contrast fail).
+     Light theme overrides it to white (its accents are darkened for this). */
+  --on-accent:       #0a0e14;
   --error:           #f87171;
   --error-glow:      rgba(248, 113, 113, 0.12);
 
@@ -35,8 +45,32 @@
   --ambient-2:       rgba(20, 130, 200, 0.05);
   --ambient-3:       rgba(100, 50, 200, 0.04);
 
+  /* Single subtle accent glow bleeding in from one corner — the whole backdrop.
+     Fixed violet (brand-ish), not mood-driven, so dark mode stays dark-dark. */
+  --backdrop-glow:   rgba(124, 92, 246, 0.16);
+
   --temp-gradient:   linear-gradient(180deg, #f0f0f5 15%, rgba(34, 211, 238, 0.4) 100%);
   --card-shadow:     0 8px 32px rgba(0, 0, 0, 0.25), var(--glass-highlight);
+
+  /* Meteocon <img> treatment. Dark theme: none (icons already contrast). Light
+     theme overrides this to lift pale clouds off the near-white cards. */
+  --wx-icon-filter:  none;
+
+  /* Persistent brand wordmark gradient (indigo→violet, matches the app icon).
+     Independent of the per-mood accent so the logo never shifts color. Dark theme
+     uses a lighter pair to pop on the dark surface. */
+  --brand-wordmark:  linear-gradient(120deg, #a5b4fc 0%, #d8b4fe 100%);
+}
+
+/* Meteocon icons (animated SVGs rendered as <img>, so uncolorable via CSS) get a
+   per-theme contrast filter. ShareCard (raster PNG) and .detail-pill-icon (inline
+   SVG glyph) are intentionally excluded. */
+.hourly-icon,
+.forecast-icon,
+.current-condition img,
+.sun-headline-icon {
+  filter: var(--wx-icon-filter);
+  transition: filter 0.3s ease;
 }
 
 
@@ -54,15 +88,8 @@
   --temp-gradient: linear-gradient(180deg, #f0f0f5 15%, rgba(245, 158, 11, 0.4) 100%);
 }
 
-[data-mood="night"] {
-  --ambient-1: rgba(80, 40, 180, 0.18);
-  --ambient-2: rgba(40, 20, 140, 0.12);
-  --ambient-3: rgba(20, 10, 80, 0.08);
-  --accent: #a78bfa;
-  --accent-glow: rgba(167, 139, 250, 0.15);
-  --accent-soft: rgba(167, 139, 250, 0.08);
-  --temp-gradient: linear-gradient(180deg, #f0f0f5 15%, rgba(167, 139, 250, 0.4) 100%);
-}
+/* Night is no longer a mood — it's data-period="night" layered over the real
+   weather (see the living-sky backdrop + [data-period] tweaks below). */
 
 [data-mood="cloudy"] {
   --ambient-1: rgba(100, 110, 160, 0.18);
@@ -71,6 +98,11 @@
   --accent: #94a3b8;
   --accent-glow: rgba(148, 163, 184, 0.15);
   --accent-soft: rgba(148, 163, 184, 0.08);
+  /* Pale slate is weak for focus rings/active states on dark glass — controls
+     use a brighter tone. */
+  --ui-accent: #b4c0d4;
+  --ui-accent-glow: rgba(180, 192, 212, 0.18);
+  --ui-accent-soft: rgba(180, 192, 212, 0.10);
   --temp-gradient: linear-gradient(180deg, #f0f0f5 15%, rgba(148, 163, 184, 0.4) 100%);
 }
 
@@ -124,6 +156,10 @@
   --accent:          #0891b2;
   --accent-glow:     rgba(8, 145, 178, 0.12);
   --accent-soft:     rgba(8, 145, 178, 0.06);
+  /* Controls use a darker teal than the decorative --accent so white text on a
+     filled control passes contrast; on-accent is white in light theme. */
+  --ui-accent:       #0e7490;
+  --on-accent:       #ffffff;
   --error:           #dc2626;
   --error-glow:      rgba(220, 38, 38, 0.08);
 
@@ -131,8 +167,22 @@
   --ambient-2:       rgba(34, 211, 238, 0.05);
   --ambient-3:       rgba(100, 50, 200, 0.03);
 
+  /* Same idea in light theme: one gentle accent glow in the corner. */
+  --backdrop-glow:   rgba(99, 102, 241, 0.12);
+
   --temp-gradient:   linear-gradient(180deg, #111120 15%, rgba(8, 145, 178, 0.4) 100%);
   --card-shadow:     0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  /* Lift pale Meteocons off the near-white cards: a tight edge shadow + soft
+     ambient shadow define the silhouette, brightness keeps whites from washing
+     out, saturate enriches the blues. Cool indigo/slate shadow is mood-agnostic. */
+  --wx-icon-filter:
+    saturate(1.18) brightness(0.96)
+    drop-shadow(0 1px 1px rgba(30, 27, 75, 0.30))
+    drop-shadow(0 2px 6px rgba(30, 27, 75, 0.14));
+
+  /* Darker indigo→violet for contrast on the light surface. */
+  --brand-wordmark: linear-gradient(120deg, #6366f1 0%, #a855f7 100%);
 }
 
 /* Light mood overrides */
@@ -143,17 +193,9 @@
   --accent: #d97706;
   --accent-glow: rgba(217, 119, 6, 0.12);
   --accent-soft: rgba(217, 119, 6, 0.06);
+  /* Amber is too light for white control text — darken the fill. */
+  --ui-accent: #b45309;
   --temp-gradient: linear-gradient(180deg, #111120 15%, rgba(217, 119, 6, 0.35) 100%);
-}
-
-[data-theme="light"][data-mood="night"] {
-  --ambient-1: rgba(70, 30, 150, 0.07);
-  --ambient-2: rgba(40, 20, 110, 0.04);
-  --ambient-3: rgba(20, 10, 70, 0.03);
-  --accent: #7c3aed;
-  --accent-glow: rgba(124, 58, 237, 0.12);
-  --accent-soft: rgba(124, 58, 237, 0.06);
-  --temp-gradient: linear-gradient(180deg, #111120 15%, rgba(124, 58, 237, 0.35) 100%);
 }
 
 [data-theme="light"][data-mood="cloudy"] {
@@ -163,6 +205,10 @@
   --accent: #64748b;
   --accent-glow: rgba(100, 116, 139, 0.12);
   --accent-soft: rgba(100, 116, 139, 0.06);
+  /* Darker slate for legible controls on near-white glass. */
+  --ui-accent: #475569;
+  --ui-accent-glow: rgba(71, 85, 105, 0.14);
+  --ui-accent-soft: rgba(71, 85, 105, 0.07);
   --temp-gradient: linear-gradient(180deg, #111120 15%, rgba(100, 116, 139, 0.35) 100%);
 }
 
@@ -173,6 +219,8 @@
   --accent: #0284c7;
   --accent-glow: rgba(2, 132, 199, 0.12);
   --accent-soft: rgba(2, 132, 199, 0.06);
+  /* Slightly darker fill so white control text passes contrast. */
+  --ui-accent: #0369a1;
   --temp-gradient: linear-gradient(180deg, #111120 15%, rgba(2, 132, 199, 0.35) 100%);
 }
 
@@ -230,21 +278,16 @@ body {
    Ambient Background (3-layer)
    =========================== */
 
-/* Static 3-layer gradient. The animated version (45s scale/translate cycle)
-   was the primary shimmer source — it forced backdrop-filter on every glass
-   card to re-rasterize every frame. Mood color changes still happen via
-   --ambient-* token swaps; the surface itself no longer moves. */
+/* Backdrop — a single, subtle accent glow bleeding in from the top-left corner
+   over the solid --bg. That's it: dark mode stays dark-dark; light mode stays
+   clean. No mood-driven gradients, no per-frame animation. */
 body::before {
   content: '';
   position: fixed;
-  inset: -25%;
-  background:
-    radial-gradient(ellipse 55% 45% at 20% 25%, var(--ambient-1) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 40% at 80% 70%, var(--ambient-2) 0%, transparent 55%),
-    radial-gradient(ellipse 45% 55% at 50% 45%, var(--ambient-3) 0%, transparent 60%);
+  inset: 0;
+  background: radial-gradient(60% 55% at 8% -8%, var(--backdrop-glow) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
-  transition: background 2.5s ease;
 }
 
 
@@ -288,28 +331,21 @@ body::before {
   z-index: 10;
 }
 
-.header-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  flex-shrink: 0;
-}
+/* Header is a single utility line: the search pill grows to fill, controls sit
+   grouped on the right. No brand wordmark here — identity lives in the favicon,
+   PWA icon, and Settings → About. */
 
-.header-logo {
-  width: 22px;
-  height: 22px;
-  color: var(--accent);
-  opacity: 0.7;
-  transition: color 0.5s ease;
-}
-
-.header-name {
+/* Typographic brand logo — an indigo→violet gradient wordmark, reused in
+   Settings → About via `.brand-word`. */
+.brand-word {
   font-family: var(--font-display);
-  font-size: 0.75rem;
   font-weight: 700;
-  color: var(--text-1);
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: -0.02em;
+  background: var(--brand-wordmark);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .header-actions {
@@ -386,7 +422,10 @@ body::before {
   z-index: 201;
   overflow-y: auto;
   background: var(--bg);
-  padding: 0 1.5rem 3rem;
+  /* Center content in the same 780px column as the main shell so the sheet
+     doesn't sprawl full-width on desktop; collapses to a 1.5rem gutter on
+     narrow screens. */
+  padding: 0 max(1.5rem, calc((100% - 780px) / 2)) 3rem;
   padding-top: env(safe-area-inset-top, 0px);
   animation: aqiSlideUp 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
@@ -506,8 +545,8 @@ body::before {
 .segmented-option:hover:not(.is-active) { color: var(--text-1); }
 
 .segmented-option.is-active {
-  background: var(--accent);
-  color: #fff;
+  background: var(--ui-accent);
+  color: var(--on-accent);
   box-shadow: 0 2px 12px var(--accent-glow);
 }
 
@@ -537,6 +576,136 @@ body::before {
 
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
+/* Install (Settings → Install) */
+.settings-install {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.settings-install-title {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.settings-install-hint {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.settings-install-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1.125rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--ui-accent);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.settings-install-btn:hover {
+  box-shadow: 0 2px 16px var(--accent-glow);
+  transform: translateY(-1px);
+}
+
+.settings-install-done .settings-install-check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft, var(--glass));
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.settings-install-done { justify-content: flex-start; }
+
+.settings-install-ios { display: block; }
+
+.settings-install-steps {
+  margin: 0.75rem 0 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+.settings-install-steps strong { color: var(--text-1); font-weight: 600; }
+
+/* SW lifecycle toast (new-version / offline-ready) */
+.pwa-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1.25rem);
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  max-width: min(92vw, 420px);
+  padding: 0.75rem 0.875rem 0.75rem 1.125rem;
+  background: var(--glass-strong);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--card-shadow);
+  animation: pwaToastIn 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+@keyframes pwaToastIn {
+  from { opacity: 0; transform: translate(-50%, 1rem); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.pwa-toast-text {
+  font-size: 0.8125rem;
+  color: var(--text-1);
+  line-height: 1.35;
+}
+
+.pwa-toast-actions {
+  flex-shrink: 0;
+  display: inline-flex;
+  gap: 0.375rem;
+}
+
+.pwa-toast-btn {
+  padding: 0.4375rem 0.875rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--ui-accent);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.pwa-toast-btn:hover { box-shadow: 0 2px 12px var(--ui-accent-glow); }
+
+.pwa-toast-btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+}
+
+.pwa-toast-btn-ghost:hover { color: var(--text-1); box-shadow: none; }
+
 /* About */
 .settings-about-head {
   display: flex;
@@ -546,17 +715,12 @@ body::before {
 
 .settings-about-mark {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  background: var(--accent-soft, var(--glass));
-  color: var(--accent);
+  border-radius: 12px;
+  display: block;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
-
-.settings-about-mark svg { width: 26px; height: 20px; }
 
 .settings-about-name {
   font-family: var(--font-display);
@@ -677,6 +841,8 @@ body::before {
 
 .search-bar {
   position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .search-bar input {
@@ -697,8 +863,8 @@ body::before {
 }
 
 .search-bar input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow), 0 4px 24px rgba(0, 0, 0, 0.15);
+  border-color: var(--ui-accent);
+  box-shadow: 0 0 0 3px var(--ui-accent-glow), 0 4px 24px rgba(0, 0, 0, 0.15);
 }
 
 .search-bar input::placeholder {
@@ -725,7 +891,7 @@ body::before {
   width: 16px;
   height: 16px;
   border: 2px solid var(--glass-border);
-  border-top-color: var(--accent);
+  border-top-color: var(--ui-accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -833,15 +999,15 @@ body::before {
   background: rgba(15, 23, 42, 0.04);
 }
 
-/* Keyboard focus needs to be unmistakable — accent fill + left edge.
-   color-mix keeps the bg tied to the current weather mood's accent. */
+/* Highlight (mouse hover sets this too) — a neutral fill, a touch stronger than
+   :hover so keyboard nav stays visible. No accent left-border, to match the
+   app's other hover interactions. */
 .search-suggestion.active {
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 [data-theme="light"] .search-suggestion.active {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: rgba(15, 23, 42, 0.06);
 }
 
 .suggestion-pin {
@@ -1117,34 +1283,133 @@ body::before {
    =========================== */
 
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 8rem 1rem 3rem;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 4.5rem 1rem 3rem;
   animation: blurIn 0.8s ease 0.1s both;
 }
 
-.empty-icon {
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 2rem;
-  color: var(--accent);
-  opacity: 0.25;
+/* Empty-state brand mark — the raster app icon (indigo→violet cloud tile),
+   matching Settings → About. A gentle float; static under reduced motion. */
+.empty-app-icon {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 1.125rem;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.45);
+  animation: emptyIconFloat 4s ease-in-out infinite;
+  will-change: transform;
 }
 
-.empty-title {
+@keyframes emptyIconFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-app-icon { animation: none; }
+}
+
+/* Brand wordmark — the identity moment now that the header is logo-less.
+   Uses the indigo→violet brand gradient (via .brand-word), matching the app
+   icon + Settings → About. NOTE: don't set `background` here — the shorthand
+   resets background-clip and the text-clip breaks (renders a solid box). */
+.empty-wordmark {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.empty-tagline {
   font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 300;
-  color: var(--text-2);
-  margin-bottom: 0.625rem;
-  letter-spacing: -0.01em;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: var(--text-1);
+  margin-bottom: 0.75rem;
 }
 
 .empty-subtitle {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text-3);
+  max-width: 26rem;
+}
+
+/* Primary get-started CTA — filled accent so it's the clear next step. */
+.empty-locate {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.75rem;
+  padding: 0.75rem 1.375rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--ui-accent);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px -4px var(--ui-accent-glow);
+  transition: box-shadow 0.2s, transform 0.15s, opacity 0.2s;
+}
+
+.empty-hint {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+/* Educational feature chips — what the app does, at a glance. */
+.empty-features {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+}
+
+.empty-feature {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-pill);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  color: var(--text-2);
+}
+
+.empty-feature svg {
+  width: 15px;
+  height: 15px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.empty-locate svg { width: 16px; height: 16px; }
+
+.empty-locate:hover:not(:disabled) {
+  box-shadow: 0 6px 18px -4px var(--ui-accent-glow);
+  transform: translateY(-1px);
+}
+
+.empty-locate:disabled { opacity: 0.9; cursor: default; box-shadow: none; }
+
+.empty-locate-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
 }
 
 
@@ -1187,18 +1452,22 @@ body::before {
    Current Weather (Hero)
    =========================== */
 
+/* The hero is the primary card — a subtle mood-accent gradient rim + soft halo
+   set it apart from the plain glass cards (fill stays dark; no color wash). */
 .current-weather {
   position: relative;
-  background: var(--glass-strong);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--glass-strong), var(--glass-strong)) padding-box,
+    linear-gradient(135deg, var(--accent-glow), var(--glass-border) 45%) border-box;
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
-  border: 1px solid var(--glass-border);
   border-radius: var(--radius);
   padding: 1.75rem 1.75rem 1.5rem;
-  box-shadow: var(--card-shadow);
+  box-shadow: var(--card-shadow), 0 0 44px -14px var(--accent-glow);
   text-align: left;
   animation: revealUp 0.6s cubic-bezier(0.33, 1, 0.68, 1) both;
-  transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  transition: background 0.5s ease, box-shadow 0.5s ease;
 }
 
 .current-city {
@@ -1320,7 +1589,7 @@ body::before {
 /* Right column: condition pill on top, stats stacked beneath, right-aligned */
 .current-side {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   align-items: flex-end;
   gap: 0.875rem;
   min-width: 0;
@@ -1595,7 +1864,9 @@ body::before {
   -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  box-shadow: var(--card-shadow);
+  /* Tight, contained shadow — the standalone-card shadow (0 8px 32px) bleeds
+     into neighbors in this dense row and reads as one muddy smear. */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10), var(--glass-highlight);
   min-width: 110px;
   animation: cardIn 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -1604,7 +1875,7 @@ body::before {
 .detail-pill:hover {
   background: var(--surface-hover);
   border-color: var(--accent-glow);
-  box-shadow: 0 0 24px var(--accent-glow), var(--card-shadow);
+  box-shadow: 0 4px 16px var(--accent-glow), var(--glass-highlight);
 }
 
 .detail-pill-label {
@@ -1734,10 +2005,19 @@ body::before {
   -webkit-backdrop-filter: blur(var(--blur));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  padding: 1.125rem 1rem 1rem;
+  padding: 1.125rem 1rem 0.875rem;
   box-shadow: var(--card-shadow);
   animation: revealUp 0.5s cubic-bezier(0.33, 1, 0.68, 1) 0.12s both;
   transition: background 0.5s ease, border-color 0.5s ease;
+}
+
+.hourly-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0 0.5rem;
 }
 
 .hourly-title {
@@ -1746,44 +2026,98 @@ body::before {
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  margin-bottom: 0.625rem;
-  padding-left: 0.5rem;
 }
+
+.hourly-summary {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hourly-summary-trend { color: var(--accent); font-weight: 600; }
 
 .hourly-scroll {
-  display: flex;
-  gap: 0;
   overflow-x: auto;
+  overflow-y: visible;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
-.hourly-scroll::-webkit-scrollbar {
-  display: none;
+.hourly-scroll::-webkit-scrollbar { display: none; }
+
+.hourly-track {
+  position: relative;
 }
 
-.hourly-item {
+/* Temperature curve overlay (spans the whole track, sits on the graph band) */
+.hourly-graph-svg {
+  position: absolute;
+  left: 0;
+  pointer-events: none;
+}
+
+.hourly-line {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hourly-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: hourlyDraw 1s ease-out 0.15s forwards;
+  }
+}
+
+@keyframes hourlyDraw { to { stroke-dashoffset: 0; } }
+
+.hourly-now-line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.45;
+}
+
+.hourly-now-dot {
+  fill: var(--accent);
+  stroke: var(--glass-strong);
+  stroke-width: 2;
+}
+
+.hourly-night { fill: currentColor; opacity: 0.035; color: var(--text-1); }
+
+.hourly-cols {
+  position: relative;
+  display: flex;
+  z-index: 1;
+}
+
+.hourly-col {
+  position: relative;
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.625rem;
-  flex-shrink: 0;
-  min-width: 52px;
   border-radius: var(--radius);
+  outline: none;
   transition: background 0.2s ease;
 }
 
-.hourly-item:hover {
+.hourly-col:hover,
+.hourly-col:focus-visible {
   background: var(--accent-soft);
 }
 
-.hourly-item.now {
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-glow);
-  box-shadow: 0 0 16px var(--accent-glow);
-}
+.hourly-col.is-now { background: var(--accent-soft); }
 
 .hourly-time {
+  display: flex;
+  align-items: center;
   font-size: 0.5625rem;
   font-weight: 700;
   color: var(--text-3);
@@ -1791,20 +2125,94 @@ body::before {
   letter-spacing: 0.06em;
 }
 
-.hourly-item.now .hourly-time {
-  color: var(--accent);
+.hourly-col.is-now .hourly-time { color: var(--accent); }
+
+.hourly-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hourly-icon {
-  width: 28px;
-  height: 28px;
+.hourly-icon { width: 28px; height: 28px; }
+
+/* Graph band cell: the temp value is positioned at its curve point */
+.hourly-graph-cell {
+  position: relative;
+  width: 100%;
 }
 
 .hourly-temp {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, calc(-100% - 3px));
   font-family: var(--font-display);
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-1);
+  white-space: nowrap;
+}
+
+/* Precipitation bars */
+.hourly-rain-cell {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding-bottom: 2px;
+}
+
+.hourly-rain-pct {
+  font-size: 0.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.hourly-rain-bar {
+  width: 5px;
+  border-radius: 100px;
+  background: var(--text-3);
+  opacity: 0.25;
+}
+
+.hourly-rain-bar.has-rain {
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+/* Hover/focus tooltip */
+.hourly-tip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  z-index: 5;
+  padding: 0.375rem 0.5rem;
+  background: var(--glass-strong);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--text-2);
+  white-space: nowrap;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.hourly-tip strong { color: var(--text-1); font-family: var(--font-display); }
+
+.hourly-col:hover .hourly-tip,
+.hourly-col:focus-visible .hourly-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 
@@ -2128,26 +2536,218 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  font-size: 0.875rem;
-  line-height: 1;
   color: var(--text-3);
   cursor: pointer;
   opacity: 0;
+  /* Hidden ✕ must NOT catch taps — otherwise tapping the right edge of a pill
+     on mobile (no hover) silently deletes the city. Re-enabled only when shown. */
+  pointer-events: none;
   transition: opacity 0.2s, color 0.2s, background 0.2s;
   margin-left: -0.125rem;
 }
 
-.dock-item:hover .dock-remove {
-  opacity: 1;
+.dock-remove svg {
+  width: 11px;
+  height: 11px;
+  display: block;
 }
 
-.dock-remove:hover {
+/* Reveal on hover (desktop) AND on the active pill (touch): the deliberate
+   path on mobile is tap-to-open → then the ✕ appears to remove. */
+.dock-item:hover .dock-remove,
+.dock-item.active .dock-remove {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dock-remove:hover,
+.dock-remove:focus-visible {
   color: var(--error);
   background: var(--error-glow);
+  outline: none;
 }
+
+/* Touch devices: no inline pin/✕ — long-press a pill for the action sheet.
+   Also suppress the iOS long-press text-selection / callout on pills. */
+@media (hover: none) {
+  .dock-pin,
+  .dock-remove { display: none; }
+
+  .dock-item {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* One-time discoverability hint above the dock (touch only). */
+.dock-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  margin: 0 auto 0.625rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.875rem;
+  border-radius: var(--radius-pill);
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-border);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-2);
+  animation: blurIn 0.4s ease both;
+}
+
+.dock-hint-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--glass);
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.dock-hint-close svg { width: 12px; height: 12px; }
+
+/* Long-press action sheet (bottom sheet, centered to the shell column). */
+.dock-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: fadeIn 0.2s ease both;
+}
+
+/* An elevated drawer: a raised surface (top-lit over the page bg) with an inner
+   top-edge highlight + a deep lift shadow, so it reads as its own layer above
+   the dimmed page — not the same flat --bg. */
+.dock-sheet {
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+  background:
+    linear-gradient(180deg, var(--surface-hover) 0%, transparent 160px),
+    var(--bg);
+  border: 1px solid var(--glass-border);
+  border-bottom: none;
+  border-radius: 26px 26px 0 0;
+  padding: 0.75rem 0.875rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 -16px 50px rgba(0, 0, 0, 0.5);
+  animation: dockSheetUp 0.34s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+@keyframes dockSheetUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.dock-sheet-grip {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0.25rem auto 1rem;
+  border-radius: 100px;
+  background: var(--text-3);
+  opacity: 0.4;
+}
+
+.dock-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dock-sheet-title {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-1);
+  min-width: 0;
+}
+
+/* Persistent close button — same 36px circular ✕ as the detail overlays. */
+.dock-sheet-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.dock-sheet-close:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-glow);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.dock-sheet-close svg { width: 16px; height: 16px; }
+
+.dock-sheet-region {
+  margin-left: 0.4375rem;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.dock-sheet-action {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  min-height: 56px;
+  padding: 0 0.875rem 0 1rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  background: var(--glass);
+  color: var(--text-1);
+  font-family: var(--font);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.dock-sheet-action:hover {
+  background: var(--surface-hover);
+  border-color: var(--glass-highlight);
+}
+
+.dock-sheet-action > svg:first-child { width: 20px; height: 20px; flex-shrink: 0; color: var(--text-2); }
+
+.dock-sheet-action span { flex: 1; text-align: left; }
+
+.dock-sheet-chevron { width: 18px; height: 18px; flex-shrink: 0; color: var(--text-3); opacity: 0.6; }
+
+.dock-sheet-action.danger { color: var(--error); }
+.dock-sheet-action.danger > svg:first-child,
+.dock-sheet-action.danger .dock-sheet-chevron { color: var(--error); }
+.dock-sheet-action.danger:hover { background: var(--error-glow); border-color: transparent; }
 
 
 /* ===========================
@@ -2168,29 +2768,12 @@ body::before {
   will-change: transform;
 }
 
-/* Clear — floating orbs */
-.particle.orb {
-  position: absolute;
-  bottom: -10px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 200, 60, 0.6) 0%, transparent 70%);
-  animation: floatOrb linear infinite;
-  will-change: transform;
-}
-
-@keyframes floatOrb {
-  0%   { transform: translateY(0) translateX(0); }
-  25%  { transform: translateY(-25vh) translateX(10px); }
-  50%  { transform: translateY(-50vh) translateX(-8px); }
-  75%  { transform: translateY(-75vh) translateX(12px); }
-  100% { transform: translateY(-110vh) translateX(0); }
-}
-
-/* Night — twinkling stars */
+/* Clear NIGHT — twinkling stars (the only decorative particle we keep). Soft
+   near-white so they read as stars over the dark night sky. */
 .particle.star {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(167, 139, 250, 0.6) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(226, 232, 240, 0.7) 0%, transparent 70%);
   animation: twinkle ease-in-out infinite;
   will-change: opacity;
 }
@@ -2200,43 +2783,38 @@ body::before {
   50%      { opacity: 0.8; }
 }
 
-/* Cloudy — ambient wandering fog circles */
-.particle.cloud-circle {
+/* Precipitation streaks (rain/storm) — elongated, wind-leaning. The shared
+   precipFall keyframe keeps a constant wind tilt (--wind-tilt, set on <html>
+   from wind direction + speed) while translating along the tilted local axis,
+   so drops fall diagonally in wind and straight when calm. */
+.particle.raindrop,
+.particle.storm-drop {
   position: absolute;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(148, 163, 184, 0.6) 0%, transparent 70%);
-  animation: cloudFloat ease-in-out infinite;
+  top: 0;
+  border-radius: 2px;
+  animation: precipFall linear infinite;
+  transform: rotate(var(--wind-tilt, 0deg));
   will-change: transform;
 }
 
-@keyframes cloudFloat {
-  0%   { transform: translate(0, 0) scale(1); }
-  20%  { transform: translate(35px, -20px) scale(1.04); }
-  40%  { transform: translate(-10px, -45px) scale(0.97); }
-  60%  { transform: translate(-30px, 15px) scale(1.06); }
-  80%  { transform: translate(20px, 25px) scale(0.98); }
-  100% { transform: translate(0, 0) scale(1); }
-}
-
-/* Rainy — falling circles */
 .particle.raindrop {
-  position: absolute;
-  top: -10px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.6) 0%, transparent 70%);
-  animation: rainFall linear infinite;
-  will-change: transform;
+  width: 2px;
+  height: 22px;
+  background: linear-gradient(to bottom, rgba(56, 189, 248, 0) 0%, rgba(56, 189, 248, 0.6) 55%, rgba(56, 189, 248, 0) 100%);
 }
 
-@keyframes rainFall {
-  0%   { transform: translateY(0) translateX(0); }
-  25%  { transform: translateY(25vh) translateX(-4px); }
-  50%  { transform: translateY(50vh) translateX(3px); }
-  75%  { transform: translateY(75vh) translateX(-2px); }
-  100% { transform: translateY(110vh) translateX(0); }
+.particle.storm-drop {
+  width: 2px;
+  height: 30px;
+  background: linear-gradient(to bottom, rgba(192, 132, 252, 0) 0%, rgba(192, 132, 252, 0.65) 55%, rgba(192, 132, 252, 0) 100%);
 }
 
-/* Snowy — drifting snowflakes */
+@keyframes precipFall {
+  from { transform: rotate(var(--wind-tilt, 0deg)) translateY(-15vh); }
+  to   { transform: rotate(var(--wind-tilt, 0deg)) translateY(125vh); }
+}
+
+/* Snowy — round flakes drifting down with a gentler wind lean than rain. */
 .particle.snowflake {
   position: absolute;
   top: -10px;
@@ -2247,47 +2825,33 @@ body::before {
 }
 
 @keyframes snowDrift {
-  0%   { transform: translateY(0) translateX(0); }
-  25%  { transform: translateY(25vh) translateX(15px); }
-  50%  { transform: translateY(50vh) translateX(-10px); }
-  75%  { transform: translateY(75vh) translateX(20px); }
-  100% { transform: translateY(110vh) translateX(5px); }
+  0%   { transform: rotate(calc(var(--wind-tilt, 0deg) * 0.5)) translateY(0) translateX(0); }
+  25%  { transform: rotate(calc(var(--wind-tilt, 0deg) * 0.5)) translateY(28vh) translateX(15px); }
+  50%  { transform: rotate(calc(var(--wind-tilt, 0deg) * 0.5)) translateY(55vh) translateX(-10px); }
+  75%  { transform: rotate(calc(var(--wind-tilt, 0deg) * 0.5)) translateY(82vh) translateX(20px); }
+  100% { transform: rotate(calc(var(--wind-tilt, 0deg) * 0.5)) translateY(115vh) translateX(5px); }
 }
 
-/* Stormy — fast falling circles */
-.particle.storm-drop {
-  position: absolute;
-  top: -10px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(192, 132, 252, 0.6) 0%, transparent 70%);
-  animation: stormFall linear infinite;
-  will-change: transform;
-}
-
-@keyframes stormFall {
-  0%   { transform: translateY(0) translateX(0); }
-  25%  { transform: translateY(28vh) translateX(-6px); }
-  50%  { transform: translateY(55vh) translateX(5px); }
-  75%  { transform: translateY(82vh) translateX(-3px); }
-  100% { transform: translateY(110vh) translateX(0); }
-}
-
-/* Stormy — lightning flash */
+/* Stormy — lightning as a soft SKY ILLUMINATION from the top, not a flat
+   full-screen white strobe. Keeps the natural double-strike timing. */
 .particle.lightning {
   position: fixed;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.08);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 48vh;
+  background: linear-gradient(to bottom, rgba(226, 232, 255, 0.6) 0%, rgba(199, 210, 254, 0.16) 35%, transparent 100%);
   opacity: 0;
-  animation: lightning ease-in-out infinite;
+  animation: lightning ease-out infinite;
   will-change: opacity;
 }
 
 @keyframes lightning {
   0%, 100% { opacity: 0; }
-  1%       { opacity: 0.6; }
-  2%       { opacity: 0; }
-  3%       { opacity: 0.3; }
-  4%       { opacity: 0; }
+  1%       { opacity: 0.9; }
+  3%       { opacity: 0.1; }
+  5%       { opacity: 0.55; }
+  7%       { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2419,8 +2983,8 @@ body::before {
   content: '';
   width: 6px;
   height: 6px;
-  border-right: 1.5px solid var(--accent);
-  border-bottom: 1.5px solid var(--accent);
+  border-right: 1.5px solid var(--ui-accent);
+  border-bottom: 1.5px solid var(--ui-accent);
   transform: rotate(45deg);
   opacity: 0.4;
   transition: opacity 0.2s;
@@ -2447,7 +3011,8 @@ body::before {
   z-index: 201;
   overflow-y: auto;
   background: var(--bg);
-  padding: 0 1.5rem 3rem;
+  /* Match the main shell's 780px centered column (see .settings-panel). */
+  padding: 0 max(1.5rem, calc((100% - 780px) / 2)) 3rem;
   padding-top: env(safe-area-inset-top, 0px);
   animation: windSlideUp 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
@@ -2559,16 +3124,6 @@ body::before {
   color: var(--text-3);
 }
 
-.wind-compass {
-  width: 120px;
-  height: 120px;
-  margin: 1.25rem auto 0;
-}
-
-.wind-compass text {
-  font-family: var(--font-display);
-}
-
 .wind-hero-category {
   display: block;
   margin-top: 1rem;
@@ -2578,12 +3133,14 @@ body::before {
   color: var(--text-1);
 }
 
-.wind-hero-desc {
+.wind-hero-feels {
   display: block;
-  margin-top: 0.25rem;
+  margin-top: 0.375rem;
   font-size: 0.75rem;
+  font-weight: 500;
   color: var(--text-3);
 }
+
 
 /* Shared card container */
 .wind-card {
@@ -2691,8 +3248,7 @@ body::before {
 }
 
 .wind-ladder-step.active {
-  background: var(--accent-soft);
-  border-left: 2px solid var(--accent);
+  background: var(--ui-accent-soft);
 }
 
 .wind-ladder-label {
@@ -2713,85 +3269,663 @@ body::before {
 }
 
 /* Hourly wind timeline */
-.wind-hourly-scroll {
-  display: flex;
-  gap: 0.375rem;
+/* Hourly wind graph (mirrors the HourlyForecast graph language) */
+.wind-graph-trend {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-family: var(--font-display);
+}
+
+.wind-graph-scroll {
   overflow-x: auto;
+  overflow-y: visible;
   scrollbar-width: none;
-  padding: 0.25rem 0;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.5rem;
 }
 
-.wind-hourly-scroll::-webkit-scrollbar {
-  display: none;
+.wind-graph-scroll::-webkit-scrollbar { display: none; }
+
+.wind-graph-track { position: relative; }
+
+.wind-graph-svg {
+  position: absolute;
+  left: 0;
+  pointer-events: none;
 }
 
-.wind-hourly-item {
-  flex-shrink: 0;
+.wind-graph-area { stroke: none; }
+
+.wind-graph-line {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wind-graph-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: hourlyDraw 1s ease-out 0.15s forwards;
+  }
+}
+
+.wind-graph-gust {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 3 3;
+  opacity: 0.5;
+}
+
+.wind-graph-now-line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.45;
+}
+
+.wind-graph-now-dot {
+  fill: var(--accent);
+  stroke: var(--glass-strong);
+  stroke-width: 2;
+}
+
+.wind-graph-night { fill: currentColor; opacity: 0.035; color: var(--text-1); }
+
+.wind-graph-cols {
+  position: relative;
+  display: flex;
+  z-index: 1;
+}
+
+.wind-graph-col {
+  position: relative;
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: 16px;
-  min-width: 56px;
-  transition: background 0.2s;
+  border-radius: var(--radius);
+  transition: background 0.2s ease;
 }
 
-.wind-hourly-item.now {
-  background: var(--accent-soft);
-}
+.wind-graph-col.is-now { background: var(--accent-soft); }
 
-.wind-hourly-time {
+.wind-graph-time {
+  display: flex;
+  align-items: center;
   font-size: 0.5625rem;
   font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wind-graph-col.is-now .wind-graph-time { color: var(--accent); }
+
+.wind-graph-cell {
+  position: relative;
+  width: 100%;
+}
+
+.wind-graph-value {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, calc(-100% - 3px));
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.wind-graph-arrow-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wind-graph-arrow {
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.wind-graph-legend {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-3);
 }
 
-.wind-hourly-item.now .wind-hourly-time {
-  color: var(--accent);
+.wind-graph-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
-.wind-hourly-arrow {
-  width: 18px;
-  height: 18px;
-  color: var(--accent);
-  transition: transform 0.3s ease;
+.wind-graph-swatch {
+  width: 14px;
+  height: 0;
+  border-top: 2.5px solid var(--accent);
 }
 
-.wind-hourly-speed {
+.wind-graph-swatch.gust {
+  border-top: 1.5px dashed var(--accent);
+  opacity: 0.6;
+}
+
+
+/* ===========================
+   Precipitation Detail
+   =========================== */
+
+.precip-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease both;
+}
+
+.precip-detail {
+  position: fixed;
+  inset: 0;
+  z-index: 201;
+  overflow-y: auto;
+  background: var(--bg);
+  /* Match the main shell's 780px centered column (see .settings-panel). */
+  padding: 0 max(1.5rem, calc((100% - 780px) / 2)) 3rem;
+  padding-top: env(safe-area-inset-top, 0px);
+  animation: windSlideUp 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+.precip-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+}
+
+.precip-detail-title {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-3);
+}
+
+.precip-detail-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.precip-detail-close:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent-glow);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.precip-detail-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Hero */
+.precip-hero {
+  text-align: center;
+  padding: 0.5rem 0 2rem;
+}
+
+.precip-hero-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.precip-hero-value {
   font-family: var(--font-display);
-  font-size: 0.9375rem;
+  font-weight: 300;
+  font-size: clamp(4.5rem, 16vw, 8rem);
+  line-height: 0.85;
+  background: var(--temp-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: tempReveal 0.9s ease-out both;
+}
+
+.precip-hero-unit {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text-3);
+}
+
+.precip-hero-dry-word {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: clamp(3.5rem, 13vw, 6rem);
+  line-height: 1;
+  color: var(--text-1);
+  margin-top: 0.5rem;
+  animation: tempReveal 0.9s ease-out both;
+}
+
+.precip-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.precip-hero-meta {
+  display: block;
+  margin-top: 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+}
+
+/* Shared card */
+.precip-card {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-top: 1rem;
+  box-shadow: var(--card-shadow);
+  animation: cardIn 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+
+.precip-section-title {
+  display: block;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-3);
+  margin-bottom: 0.875rem;
+}
+
+.precip-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.precip-card-header .precip-section-title { margin-bottom: 0; }
+
+.precip-summary-text {
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--text-2);
+}
+
+.precip-empty {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-2);
+  margin-top: 0.25rem;
+}
+
+/* Today's summary grid */
+.precip-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.precip-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.precip-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--text-1);
+}
+
+.precip-stat-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-3);
+}
+
+/* Multi-day outlook */
+.precip-days {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.precip-day-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.precip-day-name {
+  width: 44px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-1);
 }
 
-.wind-hourly-gust {
+.precip-day-icon { width: 26px; height: 26px; flex-shrink: 0; }
+
+.precip-day-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 100px;
+  background: var(--glass-border);
+  overflow: hidden;
+}
+
+.precip-day-bar {
+  display: block;
+  height: 100%;
+  border-radius: 100px;
+  background: #38bdf8;
+}
+
+.precip-day-chance {
+  width: 34px;
+  text-align: right;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.precip-day-extra {
+  width: 56px;
+  text-align: right;
+  font-size: 0.625rem;
+  color: var(--text-3);
+}
+
+/* Intensity ladder (background tint only — no accent left stripe, per design system) */
+.precip-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.precip-ladder-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.precip-ladder-step.active { background: var(--accent-soft); }
+
+.precip-ladder-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.precip-ladder-step.active .precip-ladder-label { color: var(--accent); }
+
+.precip-ladder-range {
   font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 500;
   color: var(--text-3);
 }
 
-.wind-hourly-dir {
-  font-size: 0.5rem;
+/* Educational */
+.precip-edu-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  padding: 0;
+}
+
+.precip-edu-toggle svg { width: 16px; height: 16px; margin-left: auto; transition: transform 0.2s; }
+
+.precip-edu-content {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: blurIn 0.3s ease both;
+}
+
+.precip-edu-block {
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--glass-border);
+}
+
+.precip-edu-title {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 0 0 0.25rem;
+}
+
+.precip-edu-body {
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--text-2);
+  margin: 0;
+}
+
+/* Hourly precip graph */
+.precip-graph-peak {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  font-family: var(--font-display);
+}
+
+.precip-graph-scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.75rem;
+}
+
+.precip-graph-scroll::-webkit-scrollbar { display: none; }
+
+.precip-graph-track { position: relative; }
+
+.precip-graph-svg { position: absolute; left: 0; pointer-events: none; }
+
+.precip-graph-area { stroke: none; }
+
+.precip-graph-line {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .precip-graph-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: hourlyDraw 1s ease-out 0.15s forwards;
+  }
+}
+
+.precip-graph-now-line {
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+  opacity: 0.45;
+}
+
+.precip-graph-now-dot {
+  fill: var(--accent);
+  stroke: var(--glass-strong);
+  stroke-width: 2;
+}
+
+.precip-graph-night { fill: currentColor; opacity: 0.035; color: var(--text-1); }
+
+.precip-graph-cols { position: relative; display: flex; z-index: 1; }
+
+.precip-graph-col {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: var(--radius);
+  transition: background 0.2s ease;
+}
+
+.precip-graph-col.is-now { background: var(--accent-soft); }
+
+.precip-graph-time {
+  display: flex;
+  align-items: center;
+  font-size: 0.5625rem;
   font-weight: 700;
   color: var(--text-3);
+  text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.wind-hourly-legend {
+.precip-graph-col.is-now .precip-graph-time { color: var(--accent); }
+
+.precip-graph-cell { position: relative; width: 100%; }
+
+.precip-graph-pct {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, calc(-100% - 3px));
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.precip-graph-bar-cell {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+}
+
+.precip-graph-bar {
+  width: 8px;
+  border-radius: 100px 100px 0 0;
+  background: #38bdf8;
+}
+
+.precip-graph-bar.snow { background: #bae6fd; }
+
+.precip-graph-tip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  z-index: 5;
+  padding: 0.375rem 0.5rem;
+  background: var(--glass-strong);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  font-size: 0.625rem;
+  line-height: 1.35;
+  color: var(--text-2);
+  white-space: nowrap;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.precip-graph-col:hover .precip-graph-tip,
+.precip-graph-col:focus-visible .precip-graph-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.precip-graph-legend {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
-  margin-top: 0.625rem;
-  font-size: 0.5rem;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.5625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--text-3);
 }
+
+.precip-graph-legend-item { display: inline-flex; align-items: center; gap: 0.375rem; }
+
+.precip-graph-swatch.line { width: 14px; height: 0; border-top: 2.5px solid var(--accent); }
+.precip-graph-swatch.bar { width: 8px; height: 10px; border-radius: 3px 3px 0 0; background: #38bdf8; }
+
+@media (max-width: 480px) {
+  .precip-detail { padding: 0 1rem 2rem; }
+  .precip-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem 0.5rem; }
+}
+
 
 /* Daily summary grid */
 .wind-stat-grid {
@@ -2923,7 +4057,8 @@ body::before {
   z-index: 201;
   overflow-y: auto;
   background: var(--bg);
-  padding: 0 1.5rem 3rem;
+  /* Match the main shell's 780px centered column (see .settings-panel). */
+  padding: 0 max(1.5rem, calc((100% - 780px) / 2)) 3rem;
   padding-top: env(safe-area-inset-top, 0px);
   animation: aqiSlideUp 0.4s cubic-bezier(0.33, 1, 0.68, 1) both;
 }
@@ -3009,14 +4144,6 @@ body::before {
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-}
-
-.aqi-hero-summary {
-  margin: 1rem auto 0;
-  max-width: 320px;
-  font-size: 0.8125rem;
-  line-height: 1.6;
-  color: var(--text-2);
 }
 
 /* Shared card */
@@ -3182,7 +4309,6 @@ body::before {
   justify-content: space-between;
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  border-left: 2px solid transparent;
   transition: background 0.2s, opacity 0.2s;
 }
 

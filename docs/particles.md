@@ -1,13 +1,21 @@
 # Weather Particles Guide
 
-> ⚠️ **Policy update (2026-06-13) — [`dynamic-weather.md`](dynamic-weather.md) takes precedence.**
-> The dynamic-weather initiative supersedes parts of this guide. Specifically, the
-> **"circles only" and "no rotation" constraints are lifted for precipitation** (rain/storm
-> may be elongated streaks and may rotate/skew to express wind angle). What still holds:
-> **no `<canvas>`, no WebGL, no `<svg>` particles** — everything remains styled `<div>`s.
-> Non-precip particles (orbs, stars, clouds, snow) stay circular unless that plan says otherwise.
-> The current code still renders all-circles until Milestone 2 lands; until then this guide
-> describes the live implementation, with the amended rules below marking the target.
+> ⚠️ **Shipped 2026-07-10 — "Living Sky" revamp.** The particle system was cut down and
+> reworked. Current truth:
+> - **Only two particle families remain:** precipitation (`raindrop`, `storm-drop`, `snowflake`)
+>   and **clear-night stars**. The decorative **clear "orbs" and cloudy "fog-circles" were
+>   removed** — clear days and cloudy skies show no particles (just the plain background).
+> - **Rain & storm are elongated streaks** (height ≫ width, gradient fill) that **lean with wind**
+>   via `--wind-tilt`; snow stays a round flake with a gentler lean.
+> - **Intensity** (`data-intensity` light/moderate/heavy) scales precip count/speed/opacity.
+> - **Lightning** is a soft top-anchored **sky glow**, not a full-screen white strobe.
+> - Still firm: **no `<canvas>`, no WebGL, no `<svg>` particles** — everything is styled `<div>`s.
+> - The background (a single `--backdrop-glow` corner glow on `body::before`) is **not** a
+>   particle (see [`dynamic-weather.md`](dynamic-weather.md)). Component: `WeatherParticles.jsx`.
+>
+> The per-mood sections further down describe the pre-revamp all-circles implementation and are
+> **historical** where they mention orbs/fog or circular rain — trust this banner + the tables
+> immediately below for current behavior.
 
 Reference this file before making ANY edits to `client/components/WeatherParticles.jsx` or particle-related CSS in `client/App.css`.
 
@@ -75,14 +83,18 @@ Counts below reflect the **current code** (`WeatherParticles.jsx` is the source 
 was reduced ~40% in the perf pass). Earlier revisions of this guide listed pre-perf-pass
 counts (14/30/22/35/25/45); those are wrong.
 
-| Mood | Type | Count | Size | Speed | Opacity | Direction | Animation |
-|------|------|-------|------|-------|---------|-----------|-----------|
-| clear | `orb` | 10 | 4-10px | 16-26s | 0.10-0.30 | bottom → top | `floatOrb` |
-| night | `star` | 18 | 2-5px | 3-6s | 0.10-0.30 | stationary | `twinkle` |
-| cloudy | `cloud-circle` | 14 | 15-70px | 20-40s | 0.06-0.20 | ambient wander | `cloudFloat` |
-| rainy | `raindrop` | 20 | 3-7px | 1.0-2.0s | 0.12-0.35 | top → bottom | `rainFall` |
-| snowy | `snowflake` | 16 | 3-8px | 6-14s | 0.15-0.40 | top → bottom | `snowDrift` |
-| stormy | `storm-drop` + `lightning` | 26 + 1 | 3-6px | 0.6-1.4s | 0.12-0.30 | top → bottom + flash | `stormFall` + `lightning` |
+**Current (post-revamp) mapping** — the source of truth is `WeatherParticles.jsx`. Counts are
+the **moderate**-intensity base; `data-intensity` scales count ×0.55 / ×1.0 / ×1.6 and speed
+(duration ×1.3 / ×1.0 / ×0.72) for light / moderate / heavy. Rain/storm lean by `--wind-tilt`.
+
+| State | Type | Base count | Shape/size | Speed (base) | Animation |
+|------|------|-----------|-----------|-------|-----------|
+| clear + **day** | — | 0 | (no particles) | — | — |
+| clear + **night** | `star` | 18 | circle 2-5px | 3-6s | `twinkle` |
+| cloudy | — | 0 | (no particles) | — | — |
+| rainy | `raindrop` | 20 | streak 2×22px | 0.9-1.7s | `precipFall` (+ `--wind-tilt`) |
+| snowy | `snowflake` | 16 | circle 3-8px | 7-14s | `snowDrift` (gentle lean) |
+| stormy | `storm-drop` + `lightning` | 26 + 1 | streak 2×30px | 0.5-1.1s | `precipFall` + top-glow `lightning` |
 
 ---
 

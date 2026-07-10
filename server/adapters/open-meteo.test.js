@@ -12,6 +12,7 @@ function assertNeutralShape(d) {
   expect(typeof d.current.temp.c).toBe('number');
   expect(typeof d.current.temp.f).toBe('number');
   expect(typeof d.current.feels_like.c).toBe('number');
+  expect(typeof d.current.dewpoint.c).toBe('number');
   expect(typeof d.current.condition.id).toBe('number');
   expect(typeof d.current.condition.text).toBe('string');
   expect(typeof d.current.wind.dir).toBe('string');
@@ -21,6 +22,9 @@ function assertNeutralShape(d) {
   expect(Array.isArray(d.alerts)).toBe(true);
   expect(d.daily.length).toBe(meta.forecastDays); // provider-driven (7 for Open-Meteo)
   expect(d.daily[0].hour.length).toBeGreaterThan(0);
+  expect(typeof d.daily[0].hour[0].chance_of_rain).toBe('number');
+  expect(typeof d.daily[0].hour[0].precip_mm).toBe('number');
+  expect(typeof d.daily[0].hour[0].snow_cm).toBe('number');
   expect(typeof d.daily[0].astro.sunrise).toBe('string');
   expect(typeof d.daily[0].high.c).toBe('number');
 }

@@ -80,10 +80,25 @@ export default function AQIDetail({ airQuality, onClose }) {
             </>
           )}
           <span className={`aqi-hero-badge aqi-badge ${level.className}`}>{level.label}</span>
-          <p className="aqi-hero-summary">{level.healthSummary}</p>
         </div>
 
-        {/* Primary pollutant — only shown when at least one pollutant exceeds half its threshold */}
+        {/* At a glance — plain-language takeaway, right under the hero */}
+        <div className="aqi-card">
+          <span className="aqi-section-title">At a Glance</span>
+          <p className="aqi-summary-text">{summary}</p>
+        </div>
+
+        {/* Outdoor activity guidance — the actionable "what do I do" */}
+        <div className="aqi-card">
+          <span className="aqi-section-title">Outdoor Activity</span>
+          <p className="aqi-guidance-text">{level.outdoorGuidance}</p>
+          <div className="aqi-sensitive-box">
+            <span className="aqi-sensitive-label">Sensitive Groups</span>
+            <p className="aqi-sensitive-text">{level.sensitiveAdvice}</p>
+          </div>
+        </div>
+
+        {/* Primary pollutant — what's driving it (only when one exceeds half its threshold) */}
         {primary && primary.ratio > 0.5 && (
           <div className="aqi-card">
             <div className="aqi-card-header">
@@ -129,7 +144,7 @@ export default function AQIDetail({ airQuality, onClose }) {
           </div>
         )}
 
-        {/* AQI scale ladder */}
+        {/* AQI scale ladder — reference */}
         <div className="aqi-card">
           <span className="aqi-section-title">AQI Scale</span>
           <div className="aqi-ladder">
@@ -141,7 +156,6 @@ export default function AQIDetail({ airQuality, onClose }) {
                 <div
                   className={`aqi-ladder-step${isActive ? ' active' : ''}${isAbove ? ' dimmed' : ''}`}
                   key={lvl.label}
-                  style={isActive ? { borderLeftColor: lvl.color } : undefined}
                 >
                   <div className="aqi-ladder-left">
                     <span className="aqi-ladder-index" style={isActive ? { color: lvl.color } : undefined}>{lvl.index}</span>
@@ -152,22 +166,6 @@ export default function AQIDetail({ airQuality, onClose }) {
               );
             })}
           </div>
-        </div>
-
-        {/* Outdoor activity guidance */}
-        <div className="aqi-card">
-          <span className="aqi-section-title">Outdoor Activity</span>
-          <p className="aqi-guidance-text">{level.outdoorGuidance}</p>
-          <div className="aqi-sensitive-box">
-            <span className="aqi-sensitive-label">Sensitive Groups</span>
-            <p className="aqi-sensitive-text">{level.sensitiveAdvice}</p>
-          </div>
-        </div>
-
-        {/* At a glance */}
-        <div className="aqi-card">
-          <span className="aqi-section-title">At a Glance</span>
-          <p className="aqi-summary-text">{summary}</p>
         </div>
 
         {/* Educational section */}

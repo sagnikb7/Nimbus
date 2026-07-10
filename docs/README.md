@@ -17,6 +17,7 @@ it links to. Tracking lives in exactly one place so it never drifts across files
 | [`particles.md`](particles.md) | **Reference** — particle-system spec & hard rules. | Before editing `WeatherParticles.jsx` or particle CSS. |
 | [`weatherapi.md`](weatherapi.md) | **Reference** — WeatherAPI + Open-Meteo capabilities, fields, limits. | Provider capabilities or usage change. |
 | [`dev-workflow.md`](dev-workflow.md) | **Reference** — run commands + visual-verify (Playwright) recipe. | The run/verify workflow changes. |
+| [`pwa.md`](pwa.md) | **Reference** — installability criteria, install UI, asset regen, verify steps. | PWA config, install UI, or icons/screenshots change. |
 | [`../CLAUDE.md`](../CLAUDE.md) | **Architecture** — components, state, caching, theming, PWA. | The architecture or a documented pattern changes. |
 
 ## Maintenance protocol

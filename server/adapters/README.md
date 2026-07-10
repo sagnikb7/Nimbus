@@ -60,6 +60,7 @@ the client selector all pick it up automatically.
     "is_day": 1,
     "wind": { "speed_kph":0, "dir":"NW", "degree":0, "gust_kph":0 },
     "humidity":0, "uv":0, "precip_mm":0, "visibility_km":0, "pressure_mb":0,
+    "dewpoint": { "c":0, "f":0 },             // or null; comfort ("muggy") metric
     "cloud_cover":0,                          // % (both providers)
     "moon_phase": null, "moon_illumination": null,  // WeatherAPI only; null = omit in UI
     "air_quality": { "pm2_5":0,"pm10":0,"o3":0,"no2":0,"so2":0,"co":0, "epa_index":1 } // or null
@@ -72,7 +73,8 @@ the client selector all pick it up automatically.
     "astro": { "sunrise":"6:30 AM", "sunset":"6:00 PM" },
     "hour": [ {
       "time":"YYYY-MM-DD HH:MM", "time_epoch":0, "temp":{"c":0,"f":0},
-      "condition":{"id":1000,"text":"Clear"}, "is_day":1,
+      "condition":{"id":1000,"text":"Clear"}, "is_day":1, "chance_of_rain":0,
+      "precip_mm":0, "snow_cm":0,
       "wind":{"speed_kph":0,"dir":"NW","degree":0,"gust_kph":0}
     } ]
   } ],

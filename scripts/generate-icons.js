@@ -42,4 +42,22 @@ for (const { size, file } of targets) {
   console.log(`Created ${out} (${size}×${size})`);
 }
 
+// Maskable icon: the master is a rounded tile with transparent corners, which a
+// device mask (circle/squircle) would clip, leaving gaps. So we downscale it
+// into the maskable "safe zone" (centered ~78%) and pad the rest with the dark
+// splash color — the result reads as a cohesive tile no mask can crop.
+const MASKABLE = { size: 512, safe: 400, pad: '0f0f1a', file: 'maskable-512x512.png' };
+{
+  const out = path.join(publicDir, MASKABLE.file);
+  // 1) scale the master down to the safe-zone size
+  execFileSync('sips', ['-s', 'format', 'png', '-z', String(MASKABLE.safe), String(MASKABLE.safe), master, '--out', out], {
+    stdio: 'ignore',
+  });
+  // 2) pad back out to full size with an opaque background (fills the corners)
+  execFileSync('sips', ['-p', String(MASKABLE.size), String(MASKABLE.size), '--padColor', MASKABLE.pad, out, '--out', out], {
+    stdio: 'ignore',
+  });
+  console.log(`Created ${out} (${MASKABLE.size}×${MASKABLE.size}, maskable)`);
+}
+
 console.log('Done!');

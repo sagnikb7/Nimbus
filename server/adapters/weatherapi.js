@@ -18,6 +18,9 @@ function mapHour(h) {
     temp: { c: h.temp_c, f: h.temp_f },
     condition: mapCondition(h.condition),
     is_day: h.is_day,
+    chance_of_rain: h.chance_of_rain ?? 0,
+    precip_mm: h.precip_mm ?? 0,
+    snow_cm: h.snow_cm ?? 0,
     wind: { speed_kph: h.wind_kph, dir: h.wind_dir, degree: h.wind_degree, gust_kph: h.gust_kph },
   };
 }
@@ -84,6 +87,7 @@ async function fetchWeather(city, { apiKey } = {}) {
       is_day: c.is_day,
       wind: { speed_kph: c.wind_kph, dir: c.wind_dir, degree: c.wind_degree, gust_kph: c.gust_kph },
       humidity: c.humidity,
+      dewpoint: c.dewpoint_c != null ? { c: c.dewpoint_c, f: c.dewpoint_f } : null,
       uv: c.uv,
       precip_mm: c.precip_mm,
       visibility_km: c.vis_km,

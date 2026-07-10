@@ -16,8 +16,8 @@ export async function shareOrDownload(canvas, city) {
     try {
       await navigator.share({
         files: [file],
-        title: `Weather in ${city}`,
-        text: `Current weather in ${city} — nimbus-weather-2026.netlify.app`,
+        title: `${city} weather · Nimbus`,
+        text: `Weather, beautifully. Try Nimbus → nimbus-weather-2026.netlify.app`,
       });
       return;
     } catch (err) {

@@ -8,6 +8,36 @@ The goal: evolve Nimbus from **6 discrete moods** into a **continuous, data-driv
 atmosphere** — award-winning-feeling, **CSS-only** (no canvas/WebGL), within the perf budget
 the [perf pass](DECISIONS.md) established.
 
+## ✅ Shipped (2026-07-10), then simplified — what actually landed
+
+The **particle + structural** half of the revamp landed and stuck. The "living sky" backdrop
+was built, disliked in review ("dark mode should feel proper dark-dark, not colored"), and
+**reverted** in favor of a deliberately plain background.
+
+What's live:
+- **Background = one subtle corner glow.** Solid `--bg` + a single fixed-violet `--backdrop-glow`
+  radial bleeding from the top-left (`body::before`). Not mood/time driven, no animation. Dark
+  theme reads dark-dark; light theme stays clean. (The time-of-day sky, `--sky-*`,
+  `getSkyGradient`, and the `body::after` weather layer were all removed. The per-mood
+  `--ambient-*` tokens are now unused legacy.)
+- **Night is a lighting modifier, not a mood** — `getWeatherMood(code)` returns weather only
+  (`clear|cloudy|rainy|snowy|stormy`); day/night is `data-period` from `is_day`. The old
+  `if(!isDay) return 'night'` bug and the standalone `night` mood palette are gone.
+- **Precipitation is real** — `data-intensity` (`light|moderate|heavy` from `precip_mm` /
+  `chance_of_rain`, storms ≥ moderate) scales particle count/speed/opacity; **wind lean** via
+  `--wind-tilt` (wind direction + speed → screen tilt). Rain/storm are **elongated streaks**;
+  snow stays round with a gentler lean. Lightning is a soft **top sky-glow**, not a full-screen
+  strobe.
+- **Decorative particles cut** — clear-day "orbs" and cloudy "fog-circles" removed. Only
+  precipitation + **clear-night stars** remain.
+- **`--ui-accent` decoupled** from decorative `--accent` — controls/focus/spinners/affordances
+  use `--ui-accent` (pale moods override it to a legible tone); decorative color stays `--accent`.
+
+**Not pursued:** the continuous time-of-day sky, parallax depth, temperature tint, unified
+transition choreography. The background is intentionally minimal now. The sections below are the
+original audit, kept for the *why* — note the "atmosphere engine / living sky" vision there was
+**not** adopted.
+
 ## Decisions (finalized 2026-06-13)
 
 1. **Rendering ceiling — push CSS to its ceiling.** No canvas/WebGL. We may break "circles

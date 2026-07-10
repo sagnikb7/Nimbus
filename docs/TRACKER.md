@@ -5,14 +5,15 @@ _Knowledge (why / how / specs) lives in the other [`docs/`](README.md) files —
 to them rather than restating. Prioritized by free-tier feasibility (see
 [`weatherapi.md`](weatherapi.md)) and effort-to-impact._
 
-_Last updated: 2026-07-01._
+_Last updated: 2026-07-10._
 
 ## 🔭 Now / in flight
 
 _Nothing in flight._
 
-**Recommended next:** Dynamic-weather **M1** (structural fixes — highest leverage) or
-**Phase 2** of the weather-data backlog (batched P0 UI by component). See below.
+**Recommended next:** **Phase 2** of the weather-data backlog (batched P0 UI by component), or
+the deferred dynamic-weather polish (parallax depth, temperature tint, unified transition
+choreography). See below.
 
 ---
 
@@ -24,21 +25,20 @@ _Nothing in flight._
 
 ### 🎨 Dynamic weather — atmosphere system
 Full spec + decisions: [`dynamic-weather.md`](dynamic-weather.md). CSS-only ceiling.
+**Particle + structural revamp shipped 2026-07-10** (see done log). The "living sky" backdrop was
+built then reverted — background is now a single fixed corner glow. Remaining = optional polish.
 
-**M1 — structural correctness** (low risk, do first)
-- [ ] Night becomes a modifier, not a mood (`data-mood` weather + `data-period` day/night)
-- [ ] Night-variant palettes per weather mood (retire the standalone purple "night")
-- [ ] Intensity tiers (`light/moderate/heavy` from code + `precip_mm`) scale particle density/speed
-- [ ] Wind-driven particle angle + speed (`--wind-angle` from `current.wind.degree`)
-- [ ] Choreographed city-change transitions (cross-fade particles, unify timings)
-- [ ] Decouple `--mood-accent` (decorative) from `--ui-accent` (controls, WCAG-AA on glass)
+**Structural correctness** — ✅ shipped 2026-07-10
+- [x] Night becomes a modifier, not a mood (`data-mood` weather + `data-period` day/night)
+- [x] Standalone purple "night" mood retired
+- [x] Intensity tiers (`light/moderate/heavy` from code + `precip_mm`) scale particle density/speed
+- [x] Wind-driven particle lean (`--wind-tilt` from `current.wind.degree` + speed)
+- [x] Streak-shaped, wind-leaning precipitation (rain/storm); decorative orbs + fog **cut**
+- [x] Decouple `--accent` (decorative) from `--ui-accent` (controls, contrast-guarded on glass)
 
-**M2 — push CSS to its ceiling** (the "wow"; reassess after M1)
-- [ ] Streak-shaped precipitation (amend [`particles.md`](particles.md) hard rules)
-- [ ] Parallax depth layers (2–3)
-- [ ] Restore perf-safe ambient motion (transform-only)
-- [ ] Temperature tint (warm↔cool from `current.temp.c`)
-- [ ] Continuous time-of-day sky gradient (solar position)
+**Not pursued** (background kept intentionally minimal)
+- [ ] ~~Continuous time-of-day sky gradient~~ — built then reverted (dark mode must stay dark-dark)
+- [ ] Parallax depth layers, perf-safe ambient motion, temperature tint · not planned
 
 ### 🌦 Weather-data features
 All free-tier. "Phase 2" = the P0 items below, batched **by component** so each file is
@@ -46,11 +46,11 @@ touched once: HourlyForecast (rain bars + cloud fill), Forecast (chips + tomorro
 WeatherDetails (dewpoint + pressure trend).
 
 **P0 — data already fetched, UI missing (no new API calls)**
-- [ ] Hourly rain-probability bars under each `HourlyForecast` tile (`chance_of_rain`) · S
+- [x] Hourly rain-probability bars — shipped 2026-07-10 as part of the `HourlyForecast` trend-graph redesign (`hour[].chance_of_rain` added to the neutral schema + both adapters; Open-Meteo query gained `precipitation_probability`)
 - [ ] Hourly cloud-cover fill behind tiles (needs `hour[].cloud_cover` added to the neutral schema) · S
 - [x] Max-wind chip on daily `Forecast` rows — shipped 2026-07-01 (rows now show chance-of-rain + max-wind, the two metrics both providers supply; total-snow/UV chips dropped for cross-provider consistency)
 - [ ] Tomorrow drill-down overlay from a `Forecast` row (`daily[1].hour[]`) · M
-- [ ] Dewpoint pill in `WeatherDetails` (+ "Muggy/Comfortable/Dry") · S
+- [x] Dewpoint pill in `WeatherDetails` (+ "Muggy/Comfortable/Dry") — shipped 2026-07-10 (`current.dewpoint {c,f}` added to schema + both adapters; comfort tile via `utils/comfortUtils.getDewComfort`)
 - [ ] Pressure-trend arrow on the Pressure pill · S
 - [ ] Moon-phase + illumination card (sibling of `SunriseSunset`) · M
 - [ ] Visibility detail card (drill-down from Visibility pill; needs hourly visibility added to the neutral schema) · M
@@ -60,7 +60,7 @@ WeatherDetails (dewpoint + pressure trend).
 - [ ] "What should I wear?" / activity hint (feels-like + wind + precip) · S
 - [ ] Golden/blue-hour overlay on the sun timeline · S
 - [ ] "Compared to yesterday" badge — one new call, `history.json`, cached per-day · M
-- [ ] Precipitation timeline ("rain expected within the hour") · M
+- [x] Precipitation timeline ("rain expected within the hour") — shipped 2026-07-10 as the `PrecipDetail` page (hourly probability curve + amount bars, next-precip lead, multi-day outlook)
 - [ ] Marine mode for coastal cities — `marine.json` · L
 
 ### 🛠 Engineering & polish
@@ -78,6 +78,92 @@ sports events (Starter+). See [`weatherapi.md`](weatherapi.md).
 ## ✅ Done log (newest first)
 
 The *why* for notable items is in [`DECISIONS.md`](DECISIONS.md); full history is in git.
+
+**2026-07-10 — v1.6.0 (UI/UX polish batch)**
+- **Version bump → 1.6.0.**
+- **Single-line header** — dropped the brand wordmark; the search pill now fills the line with
+  the controls grouped right.
+- **Empty-state redesign** — brand landing/onboarding: raster app icon + indigo→violet **Nimbus**
+  wordmark + tagline + value prop + primary "Use my location" CTA (with "Locating…" state) + a
+  hint + three educational feature chips. Removed the old `CloudMark` SVG (component deleted).
+- **Hero card elevated** — the current-weather card gets a subtle mood-accent **gradient rim** +
+  soft halo (fill stays dark) to distinguish it from the plain glass cards.
+- **Accent-fill contrast fix** — filled `--ui-accent` controls now use `--on-accent` (near-black
+  in dark theme, white in light) instead of hardcoded white; light-theme control fills darkened
+  (teal/amber/blue) so all accent×theme combos pass WCAG-AA. Rule documented in `CLAUDE.md`.
+- **Dock touch model** — long-press action sheet (Pin/Remove) with Feather icons, an elevated
+  drawer surface, a persistent ✕, and a one-time hint; inline pin/✕ hidden on touch.
+- **Detail-page polish** — hero double-summary removed (At a Glance is the single narrative);
+  wind hero compacted (compass dropped, wind-chill "feels like" line added); AQI/Wind ladders +
+  precip ladder use background-tint active state (no accent left-stripe — new design-system rule).
+- **Dew Point comfort tile** — `current.dewpoint {c,f}` added to schema + both adapters; tile
+  shows value + comfort word (`getDewComfort`).
+- **Precipitation detail page** — new `PrecipDetail` overlay (tap the now-interactive Precip
+  tile), meteorologist-grade + novice-friendly: hero (current mm/h + type + intensity, or a Dry
+  state) → At a Glance → **hourly precip graph** (`PrecipHourlyGraph` — probability curve +
+  amount bars, snow-aware) → Today's Summary → multi-day outlook → Rain Intensity ladder →
+  educational. Added `hour[].precip_mm` + `snow_cm` to the neutral schema + both adapters (+ README
+  + live-test assertions) to power the amount bars. New `utils/precipUtils.js`.
+- **AQI + Wind detail hierarchy** — reordered both overlays so obvious/actionable info leads:
+  AQI = hero → At a Glance → Outdoor Activity → Primary pollutant → Breakdown → Scale → Learn;
+  Wind = hero → At a Glance → Hourly graph → Gusts → Today's Summary → Beaufort → Learn.
+  Reference/education pushed to the bottom.
+- **Hourly wind graph** — `WindDetail`'s hourly section is now a `WindHourlyGraph` (speed
+  area-curve + dashed gust line + baseline direction arrows + Now marker + night bands), modeled
+  on `HourlyForecast`. No backend — reads existing `hour[].wind`. Replaced the old scrolling
+  arrow-list.
+- **Overlay width consistency** — `SettingsPanel`/`WindDetail`/`AQIDetail` now center their
+  content in the same 780px column as the main shell (`padding-inline: max(1.5rem, calc((100% -
+  780px)/2))`) instead of sprawling full-width on desktop. Backdrops stay full-bleed.
+- **Dynamic weather revamp (particles + structure; background kept simple)** — **Night is now a
+  lighting modifier** (`data-period`), not a mood: `getWeatherMood` returns weather only, so a
+  night storm ≠ a night clear (the old `if(!isDay) return 'night'` bug is gone). Precipitation
+  gained **intensity tiers** (`data-intensity` light/moderate/heavy scaling count/speed/opacity)
+  and **wind lean** (`--wind-tilt` from wind dir+speed); rain/storm became **elongated streaks**,
+  lightning a soft **top sky-glow**. Decorative clear-"orbs" + cloudy-"fog" particles were **cut**
+  (only precipitation + clear-night stars remain). `--ui-accent` decoupled from decorative
+  `--accent` so pale moods keep legible controls/focus. A "living sky" time-of-day backdrop was
+  built then **reverted** — the background is deliberately a **single fixed corner accent glow**
+  (`--backdrop-glow`) so dark mode stays dark-dark. Full detail: [`dynamic-weather.md`](dynamic-weather.md).
+- **Share card → ad poster** — `ShareCard` rebuilt as a promo card: dark mood-tinted "aurora"
+  backdrop, big weather moment (place · temp · condition), Nimbus wordmark, and a "Try Nimbus →"
+  CTA + URL. Dropped the forecast/detail grid (it's an ad, not a dashboard).
+- **Brand/logo refresh** — header is now a **typographic** `Nimbus` wordmark with a fixed
+  indigo→violet gradient (`--brand-wordmark`, mood-independent; reused via `.brand-word` in
+  Settings→About so they match). Empty state = a flat `CloudMark` with a slow pulsating bounce
+  (`emptyCloudPulse`, reduced-motion static) + a "Use my location" CTA. Settings→About mark now
+  uses the **raster app icon** (`/pwa-192x192.png`), not the cloud SVG. (An earlier same-day
+  attempt at a live animated-Meteocon header glyph + rain "diorama" was reverted per feedback.)
+- **Light-theme weather-icon contrast** — pale Meteocon clouds were vanishing on the near-white
+  cards; added a per-theme `--wx-icon-filter` (soft cool drop-shadow + slight brightness/
+  saturate) on the icon `<img>`s. Dark theme unchanged. Also: dock pill remove-✕ made
+  mobile-safe (no hidden tap target; reveals on hover+active) and search-suggestion hover lost
+  its accent left-border for consistency.
+- **Hourly Forecast redesign — temperature trend graph** — replaced the flat `time·icon·temp`
+  card list with an SVG temp curve (values ride the line), precipitation bars
+  (`hour[].chance_of_rain`, new to the neutral schema + both adapters; Open-Meteo added
+  `precipitation_probability`), a "Now" marker, night bands, and a right-aligned micro-summary
+  ("↑ Warming · Rain by 5 AM"). Goal: understand the next hours in <1s via position, not
+  reading each cell. Curve is top-biased + damped so near-flat days still look intentional.
+  a11y: per-column `aria-label`s, decorative SVG, reduced-motion-gated draw-in. Verified across
+  light/dark/rain via Playwright.
+- **Dock + detail-tile polish** — (1) dock pill remove-✕ no longer a hidden tap target
+  (`pointer-events:none` when hidden) so mobile taps can't accidentally delete; it now reveals
+  on hover *and* on the active pill (deliberate tap-to-open → remove), with a centered SVG glyph.
+  (2) detail tiles dropped the heavy standalone-card shadow (which overlapped into a muddy band)
+  for a tight contained one — chips read as distinct.
+- **PWA hardening — installable everywhere + modern bells** — root cause of the missing
+  install icon fixed (`devOptions.enabled` turns the SW on in dev; it was off, so
+  `localhost` failed the "registered SW" criterion). Manifest completed: `id`, `lang`,
+  `dir`, `categories`, `display_override`, **maskable icon** (padded safe-zone variant via
+  `generate-icons.js`), **app shortcuts** (`?action=locate|search`, handled on mount), and
+  **screenshots** (narrow+wide) for the rich install dialog. **Settings-only install UI**
+  (`usePWA` hook → Settings → Install: native prompt / installed ✓ / iOS A2HS steps; no
+  header button by decision, no `share_target`). **Update/offline toast** via
+  `useRegisterSW` (added `workbox-window` dep). `public/_headers` for SW/manifest
+  no-cache + MIME + immutable assets; light/dark `theme-color`. Verified: prod build SW
+  `activated`, manifest `application/manifest+json`, backend tests green. Reference:
+  [`pwa.md`](pwa.md).
 
 **2026-07-01**
 - **Detail-pill polish** — AQI tile now *is* the air-quality alert (level-colored border + subtle tint

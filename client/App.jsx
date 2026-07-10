@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import Sidebar from './components/Sidebar';
 import SearchBar from './components/SearchBar';
 import CurrentWeather from './components/CurrentWeather';
@@ -11,9 +12,11 @@ import HourlyForecast from './components/HourlyForecast';
 import WeatherParticles from './components/WeatherParticles';
 import ShareCard from './components/ShareCard';
 import WindDetail from './components/WindDetail';
+import PrecipDetail from './components/PrecipDetail';
 import SettingsPanel from './components/SettingsPanel';
-import CloudMark from './components/CloudMark';
+import usePWA from './hooks/usePWA';
 import { getWeatherMood } from './utils/weatherMood';
+import { getPeriod, getPrecipIntensity } from './utils/atmosphere';
 import { captureShareCard, shareOrDownload } from './utils/shareUtils';
 import { getCached, getCachedByQuery, setCache, removeCache, partitionCities, getLocationKey } from './utils/weatherCache';
 import './App.css';
@@ -50,6 +53,48 @@ function FreshnessLabel({ cacheKey, providerId, providerLabel }) {
   );
 }
 
+// Service-worker lifecycle toast: prompts a reload when a new version is
+// waiting, and briefly confirms offline-readiness after first install.
+function UpdateToast() {
+  const {
+    offlineReady: [offlineReady, setOfflineReady],
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW();
+
+  // Auto-dismiss the "offline ready" confirmation after a few seconds.
+  useEffect(() => {
+    if (!offlineReady) return;
+    const id = setTimeout(() => setOfflineReady(false), 5000);
+    return () => clearTimeout(id);
+  }, [offlineReady, setOfflineReady]);
+
+  if (!offlineReady && !needRefresh) return null;
+
+  const close = () => {
+    setOfflineReady(false);
+    setNeedRefresh(false);
+  };
+
+  return (
+    <div className="pwa-toast" role="status" aria-live="polite">
+      <span className="pwa-toast-text">
+        {needRefresh ? 'A new version of Nimbus is available.' : "Nimbus is ready to work offline."}
+      </span>
+      <div className="pwa-toast-actions">
+        {needRefresh && (
+          <button className="pwa-toast-btn" onClick={() => updateServiceWorker(true)}>
+            Reload
+          </button>
+        )}
+        <button className="pwa-toast-btn pwa-toast-btn-ghost" onClick={close}>
+          {needRefresh ? 'Later' : 'Dismiss'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   // Saved cities are objects keyed by stable location identity:
   //   { key, name, region, country, lat, lon, query, pinned }
@@ -76,8 +121,12 @@ export default function App() {
   const [sharing, setSharing] = useState(false);
   const [windDetailOpen, setWindDetailOpen] = useState(false);
   const [aqiDetailOpen, setAQIDetailOpen] = useState(false);
+  const [precipDetailOpen, setPrecipDetailOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const shareCardRef = useRef(null);
+
+  // PWA install state (drives the Settings → About install control).
+  const pwa = usePWA();
 
   const [tempUnit, setTempUnit] = useState(() => {
     return localStorage.getItem('tempUnit') || 'c';
@@ -134,6 +183,25 @@ export default function App() {
         if (!ok) setWeatherProvider('open-meteo');
       })
       .catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Manifest app-shortcuts (long-press / right-click the installed icon) launch
+  // with ?action=… — handle it once on mount, then strip the param so a refresh
+  // doesn't re-trigger it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (action === 'locate') {
+      handleGeolocation();
+    } else if (action === 'search') {
+      document.querySelector('.search-bar input')?.focus();
+    }
+    if (action || params.has('source')) {
+      params.delete('action');
+      params.delete('source');
+      const qs = params.toString();
+      window.history.replaceState({}, '', qs ? `/?${qs}` : '/');
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build a /api/weather URL carrying the active provider.
@@ -432,22 +500,48 @@ export default function App() {
     }
   }
 
-  // Weather-reactive ambient background
-  const mood = useMemo(() => {
+  // Weather signals for the accent tokens + particle layer (mood color,
+  // day/night, precip intensity, wind lean). The background itself is a simple
+  // fixed accent glow per theme — not derived from any of this.
+  const atmosphere = useMemo(() => {
     if (!activeWeather) return null;
-    return getWeatherMood(
-      activeWeather.current.condition.id,
-      activeWeather.current.is_day
-    );
+    const { current, daily } = activeWeather;
+    const mood = getWeatherMood(current.condition.id);
+    const period = getPeriod(current.is_day);
+    const intensity = getPrecipIntensity(mood, {
+      precip_mm: current.precip_mm,
+      chance_of_rain: daily?.[0]?.chance_of_rain,
+    });
+    const wind = {
+      angle: current.wind?.degree ?? 0,
+      speed: current.wind?.speed_kph ?? 0,
+    };
+    return { mood, period, intensity, wind };
   }, [activeWeather]);
 
+  const mood = atmosphere?.mood ?? null;
+
   useEffect(() => {
-    if (mood) {
-      document.documentElement.setAttribute('data-mood', mood);
-    } else {
-      document.documentElement.removeAttribute('data-mood');
+    const root = document.documentElement;
+    if (!atmosphere) {
+      root.removeAttribute('data-mood');
+      root.removeAttribute('data-period');
+      root.removeAttribute('data-intensity');
+      return;
     }
-  }, [mood]);
+    const { mood, period, intensity, wind } = atmosphere;
+    root.setAttribute('data-mood', mood);
+    root.setAttribute('data-period', period);
+    if (intensity) root.setAttribute('data-intensity', intensity);
+    else root.removeAttribute('data-intensity');
+
+    // Wind lean: convert compass "from" direction + speed into a screen tilt.
+    // Wind FROM `angle` blows toward angle+180; its east-west component sets the
+    // sign, speed sets the magnitude (capped at ±22°). Streaks fall along it.
+    const eastComp = -Math.sin((wind.angle * Math.PI) / 180);
+    const tilt = eastComp * Math.min(22, wind.speed * 0.6);
+    root.style.setProperty('--wind-tilt', `${tilt.toFixed(1)}deg`);
+  }, [atmosphere]);
 
   const activeCity = activeWeather?.location?.name;
   const activeKey = activeWeather ? getLocationKey(activeWeather.location) : null;
@@ -462,18 +556,18 @@ export default function App() {
   useEffect(() => {
     setWindDetailOpen(false);
     setAQIDetailOpen(false);
+    setPrecipDetailOpen(false);
   }, [activeKey]);
 
   return (
     <div className="shell">
-      <WeatherParticles mood={mood} />
+      <WeatherParticles
+        mood={mood}
+        period={atmosphere?.period}
+        intensity={atmosphere?.intensity}
+      />
 
       <header className="header">
-        <div className="header-brand">
-          <CloudMark className="header-logo" />
-          <span className="header-name">Nimbus</span>
-        </div>
-
         <SearchBar
           onSearch={handleSearch}
           onSelectPlace={handleSelectPlace}
@@ -551,8 +645,10 @@ export default function App() {
             )}
             <WeatherDetails
               current={activeWeather.current}
+              tempUnit={tempUnit}
               onWindClick={() => setWindDetailOpen(true)}
               onAQIClick={() => setAQIDetailOpen(true)}
+              onPrecipClick={() => setPrecipDetailOpen(true)}
             />
             {activeWeather.daily?.length > 0 && (
               <HourlyForecast
@@ -571,11 +667,56 @@ export default function App() {
         ) : (
           !error && (
             <div className="empty-state">
-              <div className="empty-icon">
-                <CloudMark />
+              <img className="empty-app-icon" src="/pwa-192x192.png" alt="Nimbus app icon" width="88" height="88" />
+              <h1 className="brand-word empty-wordmark">Nimbus</h1>
+              <p className="empty-tagline">Weather, beautifully.</p>
+              <p className="empty-subtitle">
+                Live conditions, hourly trends, and deep dives on air quality, wind, and rain — for any city on Earth.
+              </p>
+
+              <button
+                className="empty-locate"
+                onClick={handleGeolocation}
+                disabled={geoLoading}
+              >
+                {geoLoading ? (
+                  <>
+                    <span className="empty-locate-spinner" />
+                    Locating…
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="10" r="3" />
+                      <path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z" />
+                    </svg>
+                    Use my location
+                  </>
+                )}
+              </button>
+              <p className="empty-hint">or search for any city above</p>
+
+              <div className="empty-features">
+                <div className="empty-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="3 16 8 11 12 14 21 5" />
+                    <polyline points="15 5 21 5 21 11" />
+                  </svg>
+                  <span>Hourly &amp; multi-day forecast</span>
+                </div>
+                <div className="empty-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 2.2s6.5 7.2 6.5 11.6A6.5 6.5 0 0 1 12 20.3a6.5 6.5 0 0 1-6.5-6.5C5.5 9.4 12 2.2 12 2.2z" />
+                  </svg>
+                  <span>Air quality, UV, wind &amp; rain</span>
+                </div>
+                <div className="empty-feature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span>Save your favourite cities</span>
+                </div>
               </div>
-              <p className="empty-title">Check the weather</p>
-              <p className="empty-subtitle">Search for any city to get started</p>
             </div>
           )
         )}
@@ -602,6 +743,7 @@ export default function App() {
           current={activeWeather.current}
           forecastDays={activeWeather.daily || []}
           localtime={activeWeather.location.localtime}
+          tempUnit={tempUnit}
           onClose={() => setWindDetailOpen(false)}
         />
       )}
@@ -610,6 +752,15 @@ export default function App() {
         <AQIDetail
           airQuality={activeWeather.current.air_quality}
           onClose={() => setAQIDetailOpen(false)}
+        />
+      )}
+
+      {precipDetailOpen && activeWeather && (
+        <PrecipDetail
+          current={activeWeather.current}
+          forecastDays={activeWeather.daily || []}
+          localtime={activeWeather.location.localtime}
+          onClose={() => setPrecipDetailOpen(false)}
         />
       )}
 
@@ -623,9 +774,15 @@ export default function App() {
           weatherProvider={weatherProvider}
           onProviderChange={handleProviderChange}
           providerSwitching={providerSwitching}
+          canInstall={pwa.canInstall}
+          isInstalled={pwa.isInstalled}
+          isIOS={pwa.isIOS}
+          onInstall={pwa.promptInstall}
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
+      <UpdateToast />
     </div>
   );
 }

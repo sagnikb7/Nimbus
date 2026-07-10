@@ -1,3 +1,5 @@
+import { formatHour } from './chart';
+
 // Beaufort-scale wind categories (kph thresholds)
 export const WIND_CATEGORIES = [
   { label: 'Calm',            className: 'wind-calm',         min: 0,   max: 1,   description: 'Smoke rises vertically' },
@@ -100,15 +102,6 @@ export function getPeakWindHour(forecastDays) {
     if (h.wind.speed_kph > peak.wind.speed_kph) peak = h;
   }
   return peak;
-}
-
-// Formats an hour string like "3 PM" from a time string
-function formatHour(timeStr) {
-  const h = new Date(timeStr).getHours();
-  if (h === 0) return '12 AM';
-  if (h < 12) return `${h} AM`;
-  if (h === 12) return '12 PM';
-  return `${h - 12} PM`;
 }
 
 // Generates a 2-3 sentence plain-language wind summary

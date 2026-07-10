@@ -2,6 +2,8 @@ import { useState } from 'react';
 import useAnimatedNumber from '../hooks/useAnimatedNumber';
 import useOverlayDismiss from '../hooks/useOverlayDismiss';
 import CloseButton from './CloseButton';
+import WindHourlyGraph from './WindHourlyGraph';
+import { formatHour } from '../utils/chart';
 import {
   WIND_CATEGORIES,
   getWindCategory,
@@ -11,40 +13,6 @@ import {
   getPeakWindHour,
   getWindSummary,
 } from '../utils/windUtils';
-
-function CompassArrow({ degree }) {
-  return (
-    <svg className="wind-compass" viewBox="0 0 120 120">
-      {/* Outer ring */}
-      <circle cx="60" cy="60" r="54" fill="none" stroke="var(--glass-border)" strokeWidth="1.5" />
-      {/* Tick marks at N, E, S, W */}
-      <line x1="60" y1="8" x2="60" y2="16" stroke="var(--text-3)" strokeWidth="1.5" />
-      <line x1="112" y1="60" x2="104" y2="60" stroke="var(--text-3)" strokeWidth="1.5" />
-      <line x1="60" y1="112" x2="60" y2="104" stroke="var(--text-3)" strokeWidth="1.5" />
-      <line x1="8" y1="60" x2="16" y2="60" stroke="var(--text-3)" strokeWidth="1.5" />
-      {/* Cardinal labels */}
-      <text x="60" y="26" textAnchor="middle" fill="var(--text-2)" fontSize="9" fontWeight="600">N</text>
-      <text x="98" y="63" textAnchor="middle" fill="var(--text-3)" fontSize="8">E</text>
-      <text x="60" y="100" textAnchor="middle" fill="var(--text-3)" fontSize="8">S</text>
-      <text x="22" y="63" textAnchor="middle" fill="var(--text-3)" fontSize="8">W</text>
-      {/* Direction arrow — rotated to wind_degree (direction wind comes FROM) */}
-      <g transform={`rotate(${degree} 60 60)`}>
-        <line x1="60" y1="22" x2="60" y2="72" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" />
-        <polygon points="60,18 54,30 66,30" fill="var(--accent)" />
-      </g>
-      {/* Center dot */}
-      <circle cx="60" cy="60" r="3" fill="var(--accent)" />
-    </svg>
-  );
-}
-
-function formatHour(timeStr) {
-  const h = new Date(timeStr).getHours();
-  if (h === 0) return '12 AM';
-  if (h < 12) return `${h} AM`;
-  if (h === 12) return '12 PM';
-  return `${h - 12} PM`;
-}
 
 const EDU_BLOCKS = [
   {
@@ -69,8 +37,14 @@ const EDU_BLOCKS = [
   },
 ];
 
-export default function WindDetail({ current, forecastDays, localtime, onClose }) {
+export default function WindDetail({ current, forecastDays, localtime, tempUnit = 'c', onClose }) {
   const [eduOpen, setEduOpen] = useState(false);
+
+  // Wind chill: only surface when wind makes it feel COLDER (feels_like below
+  // actual) — that drop is wind's doing. Warmer "feels like" (heat index) isn't,
+  // so it's not shown on the wind page. Threshold checked in °C, shown in unit.
+  const windChill = current.temp.c - current.feels_like.c >= 2;
+  const feelsLike = Math.round(current.feels_like[tempUnit]);
 
   const category = getWindCategory(current.wind.speed_kph);
   const hourlyWind = getHourlyWind(forecastDays, localtime);
@@ -111,10 +85,20 @@ export default function WindDetail({ current, forecastDays, localtime, onClose }
             <span className="wind-hero-dir-badge">{current.wind.dir}</span>
             <span className="wind-hero-deg">{current.wind.degree}&deg;</span>
           </div>
-          <CompassArrow degree={current.wind.degree} />
           <span className="wind-hero-category">{category.label}</span>
-          <span className="wind-hero-desc">{category.description}</span>
+          {windChill && (
+            <span className="wind-hero-feels">Wind chill — feels like {feelsLike}&deg;</span>
+          )}
         </div>
+
+        {/* At a glance — plain-language takeaway, right under the hero */}
+        <div className="wind-card">
+          <span className="wind-section-title">At a Glance</span>
+          <p className="wind-summary-text">{summary}</p>
+        </div>
+
+        {/* Hourly wind graph — what's coming next */}
+        <WindHourlyGraph hours={hourlyWind} />
 
         {/* Gust card */}
         <div className="wind-card">
@@ -135,56 +119,6 @@ export default function WindDetail({ current, forecastDays, localtime, onClose }
           <p className="wind-gust-note">{gustInfo.description}</p>
         </div>
 
-        {/* Category ladder */}
-        <div className="wind-card">
-          <span className="wind-section-title">Beaufort Scale</span>
-          <div className="wind-ladder">
-            {WIND_CATEGORIES.map((cat) => {
-              const isActive = cat === category;
-              const isAbove = WIND_CATEGORIES.indexOf(cat) > WIND_CATEGORIES.indexOf(category);
-              return (
-                <div
-                  className={`wind-ladder-step${isActive ? ' active' : ''}${isAbove ? ' dimmed' : ''}`}
-                  key={cat.label}
-                >
-                  <span className="wind-ladder-label">{cat.label}</span>
-                  <span className="wind-ladder-range">
-                    {cat.max === Infinity ? `${cat.min}+` : `${cat.min}–${cat.max}`} km/h
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Hourly wind timeline */}
-        {hourlyWind.length > 0 && (
-          <div className="wind-card">
-            <span className="wind-section-title">Hourly Wind</span>
-            <div className="wind-hourly-scroll">
-              {hourlyWind.map((h, i) => {
-                const isNow = i === 0;
-                return (
-                  <div className={`wind-hourly-item${isNow ? ' now' : ''}`} key={h.time_epoch}>
-                    <span className="wind-hourly-time">{isNow ? 'Now' : formatHour(h.time)}</span>
-                    <svg className="wind-hourly-arrow" viewBox="0 0 24 24" style={{ transform: `rotate(${h.wind.degree}deg)` }}>
-                      <line x1="12" y1="4" x2="12" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      <polygon points="12,2 8,10 16,10" fill="currentColor" />
-                    </svg>
-                    <span className="wind-hourly-speed">{Math.round(h.wind.speed_kph)}</span>
-                    <span className="wind-hourly-gust">{Math.round(h.wind.gust_kph)}</span>
-                    <span className="wind-hourly-dir">{h.wind.dir}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="wind-hourly-legend">
-              <span>Speed (km/h)</span>
-              <span>Gust (km/h)</span>
-            </div>
-          </div>
-        )}
-
         {/* Daily summary */}
         <div className="wind-card">
           <span className="wind-section-title">Today&apos;s Summary</span>
@@ -204,10 +138,26 @@ export default function WindDetail({ current, forecastDays, localtime, onClose }
           </div>
         </div>
 
-        {/* Smart summary */}
+        {/* Category ladder — reference */}
         <div className="wind-card">
-          <span className="wind-section-title">At a Glance</span>
-          <p className="wind-summary-text">{summary}</p>
+          <span className="wind-section-title">Beaufort Scale</span>
+          <div className="wind-ladder">
+            {WIND_CATEGORIES.map((cat) => {
+              const isActive = cat === category;
+              const isAbove = WIND_CATEGORIES.indexOf(cat) > WIND_CATEGORIES.indexOf(category);
+              return (
+                <div
+                  className={`wind-ladder-step${isActive ? ' active' : ''}${isAbove ? ' dimmed' : ''}`}
+                  key={cat.label}
+                >
+                  <span className="wind-ladder-label">{cat.label}</span>
+                  <span className="wind-ladder-range">
+                    {cat.max === Infinity ? `${cat.min}+` : `${cat.min}–${cat.max}`} km/h
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Educational section */}
