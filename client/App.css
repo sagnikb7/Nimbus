@@ -2870,13 +2870,7 @@ body::before {
 
   .header {
     padding: 0.875rem 1rem;
-    flex-wrap: wrap;
   }
-
-  /* Brand + actions on the top row, search drops full-width below */
-  .header-brand { order: 1; }
-  .header-actions { order: 2; margin-left: auto; }
-  .search-wrap { order: 3; flex: 1 1 100%; }
 
   .current-weather {
     padding: 1.5rem 1.25rem 1.5rem;
