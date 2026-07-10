@@ -1,0 +1,9 @@
+{
+  "entry": [
+    "netlify/functions/*.js",
+    "scripts/*.js"
+  ],
+  "ignoreExports": [
+    { "file": "server/adapters/*.js", "exports": ["fetchWeather", "meta"] }
+  ]
+}
