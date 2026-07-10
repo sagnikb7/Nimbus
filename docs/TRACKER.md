@@ -11,9 +11,13 @@ _Last updated: 2026-07-10._
 
 _Nothing in flight._
 
-**Recommended next:** **Phase 2** of the weather-data backlog (batched P0 UI by component), or
-the deferred dynamic-weather polish (parallax depth, temperature tint, unified transition
-choreography). See below.
+**⏳ Pending — production-readiness hardening:** a full audit lives in
+[`production-review.md`](production-review.md). Not yet implemented. Highest-value items:
+**P0** add a React error boundary; **P1** rate-limit the Express `/api/weather`, add a fetch
+timeout/retry, and make tests hermetic (mock the adapters). Revisit before scaling.
+
+**Recommended next:** the P0/P1 hardening above, **Phase 2** of the weather-data backlog, or
+the deferred dynamic-weather polish. See below.
 
 ---
 

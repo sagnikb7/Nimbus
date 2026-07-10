@@ -15,8 +15,9 @@ Chromium shows the address-bar **install** icon only when ALL hold:
 
 The historical gap here: `vite-plugin-pwa` disables the SW in dev, so `pnpm dev`
 failed #3 and the icon never showed while developing. `devOptions.enabled: true`
-fixes that. Screenshots + maskable icon aren't required for the icon, but the
-maskable icon avoids clipping and `screenshots` upgrade the install *dialog*.
+fixes that. The maskable icon avoids clipping. **`screenshots` were removed** from
+the manifest (no rich install-dialog card by choice), so the `public/screenshots/`
+PNGs are now unused.
 
 ## Files
 
@@ -28,7 +29,7 @@ maskable icon avoids clipping and `screenshots` upgrade the install *dialog*.
 | Update / offline toast | `UpdateToast` in `client/App.jsx` (`.pwa-toast` CSS) |
 | Shortcut `?action=…` handling | mount effect in `client/App.jsx` |
 | Icon + maskable generation | `scripts/generate-icons.js` |
-| Screenshots | `public/screenshots/{mobile,wide}.png` |
+| Screenshots | _removed from manifest_ (`public/screenshots/*.png` now unused) |
 | Netlify caching/MIME headers | `public/_headers` |
 
 Registration goes through `virtual:pwa-register/react` (`useRegisterSW`), which

@@ -18,6 +18,7 @@ it links to. Tracking lives in exactly one place so it never drifts across files
 | [`weatherapi.md`](weatherapi.md) | **Reference** — WeatherAPI + Open-Meteo capabilities, fields, limits. | Provider capabilities or usage change. |
 | [`dev-workflow.md`](dev-workflow.md) | **Reference** — run commands + visual-verify (Playwright) recipe. | The run/verify workflow changes. |
 | [`pwa.md`](pwa.md) | **Reference** — installability criteria, install UI, asset regen, verify steps. | PWA config, install UI, or icons/screenshots change. |
+| [`production-review.md`](production-review.md) | **Audit (pending)** — prod-readiness verdict + prioritized P0/P1 hardening. | Revisit when hardening for scale; tick items as they land. |
 | [`../CLAUDE.md`](../CLAUDE.md) | **Architecture** — components, state, caching, theming, PWA. | The architecture or a documented pattern changes. |
 
 ## Maintenance protocol

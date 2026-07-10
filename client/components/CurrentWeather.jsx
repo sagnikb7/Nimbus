@@ -112,6 +112,25 @@ export default function CurrentWeather({ data, tempUnit, freshness }) {
         </div>
       </div>
 
+      <div className="current-params">
+        <span className="current-param" title="Humidity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 2.7s6 6.6 6 10.8a6 6 0 0 1-12 0C6 9.3 12 2.7 12 2.7z" />
+          </svg>
+          <span className="current-param-val">{current.humidity}%</span>
+          <span className="current-param-key">Humidity</span>
+        </span>
+        <span className="current-param" title="Wind">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M3 8h10a2.5 2.5 0 1 0-2.5-2.5" />
+            <path d="M3 12h15a2.5 2.5 0 1 1-2.5 2.5" />
+            <path d="M3 16h7a2 2 0 1 1-2 2" />
+          </svg>
+          <span className="current-param-val">{Math.round(current.wind.speed_kph)}</span>
+          <span className="current-param-key">km/h {current.wind.dir}</span>
+        </span>
+      </div>
+
       {freshness && <div className="current-freshness">{freshness}</div>}
     </div>
   );

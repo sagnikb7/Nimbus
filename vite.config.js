@@ -84,23 +84,6 @@ export default defineConfig({
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
           },
         ],
-        // Rich install dialog (Chrome upgrades the mini-infobar when present).
-        screenshots: [
-          {
-            src: 'screenshots/mobile.png',
-            sizes: '1080x1920',
-            type: 'image/png',
-            form_factor: 'narrow',
-            label: 'Nimbus on mobile',
-          },
-          {
-            src: 'screenshots/wide.png',
-            sizes: '1920x1080',
-            type: 'image/png',
-            form_factor: 'wide',
-            label: 'Nimbus on desktop',
-          },
-        ],
       },
 
       // Workbox service worker configuration
